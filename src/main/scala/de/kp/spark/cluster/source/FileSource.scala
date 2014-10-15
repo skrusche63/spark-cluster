@@ -26,14 +26,14 @@ import de.kp.spark.cluster.model.LabeledPoint
 
 class FileSource(@transient sc:SparkContext) extends Serializable {
 
-  val (fItems,fFeatures) = Configuration.file()
+  val (feature_in,sequence_in) = Configuration.file()
 
   /**
    * Load labeled features from the file system
    */
   def features(params:Map[String,Any]):RDD[LabeledPoint] = {
     
-    sc.textFile(fFeatures).map(valu => {
+    sc.textFile(feature_in).map(valu => {
       
       val Array(label,features) = valu.split(",")  
       new LabeledPoint(label,features.split(" ").map(_.toDouble))
@@ -43,17 +43,17 @@ class FileSource(@transient sc:SparkContext) extends Serializable {
   }
 
   /**
-   * Load ecommerce items from the file system
+   * Read data from file system: it is expected that the lines with
+   * the respective text file are already formatted in the SPMF form
    */
-  def items(params:Map[String,Any]):RDD[(String,String,String,Long,String,Float)] = {
-
-    sc.textFile(fItems).map(valu => {
-      
-      val Array(site,user,order,timestamp,item,price) = valu.split(",")  
-      (site,user,order,timestamp.toLong,item,price.toFloat)
-
+  def sequences(params:Map[String,Any] = Map.empty[String,Any]):RDD[(Int,String)] = {
     
-    }).cache
+    sc.textFile(sequence_in).filter(line => line.isEmpty == false).map(valu => {
+      
+      val Array(sid,seq) = valu.split("\\|")  
+      (sid.toInt,seq)
+    
+    })
     
   }
 

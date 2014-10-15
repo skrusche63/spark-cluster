@@ -58,10 +58,10 @@ object Configuration {
   
     val cfg = config.getConfig("file")
     
-    val items = cfg.getString("items")   
-    val features = cfg.getString("features")   
+    val feature = cfg.getString("feature")   
+    val sequence = cfg.getString("sequence")   
    
-    (items,features)
+    (feature,sequence)
     
   }
   
