@@ -30,7 +30,7 @@ import scala.collection.mutable.ArrayBuffer
 
 import de.kp.spark.cluster.Configuration
 
-import de.kp.spark.cluster.model.LabeledPoint
+import de.kp.spark.cluster.model._
 import de.kp.spark.cluster.spec.{FeatureSpec,SequenceSpec}
 
 import scala.collection.mutable.ArrayBuffer
@@ -68,7 +68,7 @@ class ElasticSource(@transient sc:SparkContext) extends Serializable {
     
   }
   
-  def sequences(params:Map[String,Any] = Map.empty[String,Any]):RDD[(Int,String)] = {
+  def sequences(params:Map[String,Any] = Map.empty[String,Any]):RDD[NumberedSequence] = {
     
     val query = params("query").asInstanceOf[String]
     val resource = params("resource").asInstanceOf[String]
@@ -124,8 +124,17 @@ class ElasticSource(@transient sc:SparkContext) extends Serializable {
     }).coalesce(1)
 
     val index = sc.parallelize(Range.Long(0,sequences.count,1),sequences.partitions.size)
-    sequences.zip(index).map(valu => (valu._2.toInt,valu._1)).cache()
+    val zip = sequences.zip(index).map(valu => (valu._2.toInt,valu._1))
 
+    zip.map(valu => {
+      
+      val (sid,seq) = valu  
+      val itemsets = seq.replace("-2", "").split(" -1 ").map(v => v.split(" ").map(_.toInt))
+      
+      new NumberedSequence(sid,itemsets)
+
+    })
+    
   }
   
   /**

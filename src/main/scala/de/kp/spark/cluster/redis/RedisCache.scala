@@ -27,32 +27,22 @@ object RedisCache {
 
   val client  = RedisClient()
   val service = "cluster"
-
-  def addModel(uid:String, forest:String) {
-   
-    val now = new Date()
-    val timestamp = now.getTime()
-    
-    val k = "model:" + service + ":" + uid
-    val v = "" + timestamp + ":" + forest
-    
-    client.zadd(k,timestamp,v)
-    
-  }
   
-  def addMeta(uid:String,meta:String) {
+  def addMeta(req:ServiceRequest,meta:String) {
    
     val now = new Date()
     val timestamp = now.getTime()
     
-    val k = "meta:" + uid
+    val k = "meta:" + req.data("uid")
     val v = "" + timestamp + ":" + meta
     
     client.zadd(k,timestamp,v)
     
   }
   
-  def addStatus(uid:String, task:String, status:String) {
+  def addStatus(req:ServiceRequest,status:String) {
+   
+    val (uid,task) = (req.data("uid"),req.task)
    
     val now = new Date()
     val timestamp = now.getTime()
@@ -63,13 +53,6 @@ object RedisCache {
     client.zadd(k,timestamp,v)
     
   }
-   
-  def modelExists(uid:String):Boolean = {
-
-    val k = "model:" + service + ":" + uid
-    client.exists(k)
-    
-  }
   
   def metaExists(uid:String):Boolean = {
 
@@ -77,7 +60,7 @@ object RedisCache {
     client.exists(k)
     
   }
-  
+ 
   def taskExists(uid:String):Boolean = {
 
     val k = "job:" + service + ":" + uid
@@ -105,23 +88,6 @@ object RedisCache {
      
   }
   
-  def model(uid:String):String = {
-
-    val k = "model:" + service + ":" + uid
-    val models = client.zrange(k, 0, -1)
-
-    if (models.size() == 0) {
-      null
-    
-    } else {
-      
-      val last = models.toList.last
-      last.split(":")(1)
-      
-    }
-  
-  }
-  
   def meta(uid:String):String = {
 
     val k = "meta:" + uid
@@ -137,7 +103,7 @@ object RedisCache {
     }
 
   }
-  
+ 
   def status(uid:String):String = {
 
     val k = "job:" + service + ":" + uid

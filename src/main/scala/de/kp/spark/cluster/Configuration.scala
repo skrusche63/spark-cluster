@@ -64,6 +64,13 @@ object Configuration {
     (feature,sequence)
     
   }
+
+  def matrix():String = {
+  
+    val cfg = config.getConfig("matrix")    
+    cfg.getString("path")   
+    
+  }
   
   def redis():(String,String) = {
   

@@ -22,7 +22,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
 import de.kp.spark.cluster.Configuration
-import de.kp.spark.cluster.model.LabeledPoint
+import de.kp.spark.cluster.model._
 
 class FileSource(@transient sc:SparkContext) extends Serializable {
 
@@ -46,13 +46,15 @@ class FileSource(@transient sc:SparkContext) extends Serializable {
    * Read data from file system: it is expected that the lines with
    * the respective text file are already formatted in the SPMF form
    */
-  def sequences(params:Map[String,Any] = Map.empty[String,Any]):RDD[(Int,String)] = {
+  def sequences(params:Map[String,Any] = Map.empty[String,Any]):RDD[NumberedSequence] = {
     
     sc.textFile(sequence_in).filter(line => line.isEmpty == false).map(valu => {
       
       val Array(sid,seq) = valu.split("\\|")  
-      (sid.toInt,seq)
+      val itemsets = seq.replace("-2", "").split(" -1 ").map(v => v.split(" ").map(_.toInt))
     
+      new NumberedSequence(sid.toInt,itemsets)
+
     })
     
   }

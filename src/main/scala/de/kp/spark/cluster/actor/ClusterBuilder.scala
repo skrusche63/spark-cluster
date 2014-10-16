@@ -36,7 +36,7 @@ class ClusterBuilder(@transient val sc:SparkContext) extends Actor with ActorLog
 
   implicit val ec = context.dispatcher
   
-  private val algorithms = Array(Algorithms.KMEANS,Algorithms.SEQ_KMEANS)
+  private val algorithms = Array(Algorithms.FEA_KMEANS,Algorithms.SEQ_KMEANS)
   private val sources = Array(Sources.ELASTIC,Sources.FILE,Sources.JDBC)
   
   def receive = {
@@ -162,11 +162,11 @@ class ClusterBuilder(@transient val sc:SparkContext) extends Actor with ActorLog
   private def actor(req:ServiceRequest):ActorRef = {
 
     val algorithm = req.data("algorithm")
-    if (algorithm == Algorithms.KMEANS) {      
-      context.actorOf(Props(new KMeansActor(sc)))   
+    if (algorithm == Algorithms.FEA_KMEANS) {      
+      context.actorOf(Props(new FeatureActor(sc)))   
 
     } else if (algorithm == Algorithms.SEQ_KMEANS) {
-      context.actorOf(Props(new SeqKMeansActor(sc)))   
+      context.actorOf(Props(new SequenceActor(sc)))   
       
     } else {
       /* do nothing */

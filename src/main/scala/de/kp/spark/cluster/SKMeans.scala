@@ -23,9 +23,9 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark._
 import org.apache.spark.SparkContext._
 
-import scala.collection.mutable.ArrayBuffer
+import de.kp.spark.cluster.model._
 
-case class SSequence(sid:Int,data:Array[Array[Int]])
+import scala.collection.mutable.ArrayBuffer
 
 class SKMeans extends Serializable {
 
@@ -64,7 +64,7 @@ class SKMeans extends Serializable {
    * Train a K-means model on the given set of points; `data` should be cached for high
    * performance, because this is an iterative algorithm.
    */
-  private def run(data:RDD[Int]): SKMeansModel = {
+  private def run(data:RDD[Int]):(Array[Int],SMatrix) = {
     
     val sc = data.sparkContext
     val centers = initRandom(data)
@@ -81,8 +81,6 @@ class SKMeans extends Serializable {
         (pos, point)
       
       }.groupBy(_._1)
-
-      println("Distribution computed for " + k)
       
       val newCenters = distribution.map(contrib => {
         
@@ -108,7 +106,7 @@ class SKMeans extends Serializable {
     
     }
 
-    new SKMeansModel(centers,matrix)
+    (centers,matrix)
 
   }
 
@@ -136,7 +134,7 @@ object SKMeans {
   /**
    * Build similarities from training data
    */
-  def prepare(source:RDD[SSequence]):SMatrix = {
+  def prepare(source:RDD[NumberedSequence]):SMatrix = {
     
     val sc = source.sparkContext
 
@@ -166,10 +164,46 @@ object SKMeans {
 
   }
   
+  def detect(data:RDD[NumberedSequence],iterations:Int,k:Int,top:Int,path:String):List[ClusteredSequence] = {
+    
+    val sc = data.context
+    
+    /* Restrict to sequence ids */
+    val ids = data.map(seq => seq.sid)
+    
+    /* Retrieve cluster centers and similarity matrix */
+    val (centers,matrix) = train(ids,iterations,k,path)
+  
+    val bccenters = sc.broadcast(centers)
+    val bcmatrix  = sc.broadcast(matrix)
+    
+    val clusters = data.map(sequence => {
+      
+      val sid = sequence.sid
+      val (cluster,sim) = matrix.findClosest(centers, sid)
+      
+      (cluster,sim,sequence)
+      
+    })
+    /*
+     * Retrieve top k sequences (NumberedSequence) with respect to their similarity
+     * to the respective cluster center; the cluster identifier is used as a grouping 
+     * mechanism to specify which sequences belong to which centroid
+     */
+    val bctop = sc.broadcast(top)
+    clusters.groupBy(_._1).flatMap(group => group._2.toList.sortBy(_._2).reverse.take(bctop.value)).map(data => {
+    
+      val (cluster,distance,sequence) = data
+      new ClusteredSequence(cluster,distance,sequence)
+      
+    }).collect().toList
+    
+  }
+  
   /**
    * Trains a k-means model using the given set of parameters.
    */
-  def train(data:RDD[Int],k:Int,iterations:Int,path:String):SKMeansModel = {
+  def train(data:RDD[Int],iterations:Int,k:Int,path:String):(Array[Int],SMatrix) = {
     
     val matrix = SKMeans.load(data.context,path)
     new SKMeans(k,iterations,matrix).run(data)

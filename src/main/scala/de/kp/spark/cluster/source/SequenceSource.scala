@@ -21,7 +21,7 @@ package de.kp.spark.cluster.source
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
-import de.kp.spark.cluster.model.Sources
+import de.kp.spark.cluster.model._
 
 /**
  * A SequenceSource is an abstraction layer on top of
@@ -30,7 +30,7 @@ import de.kp.spark.cluster.model.Sources
  */
 class SequenceSource (@transient sc:SparkContext) {
 
-  def get(data:Map[String,String]):RDD[(Int,String)] = {
+  def get(data:Map[String,String]):RDD[NumberedSequence] = {
     
     val source = data("source")
     source match {

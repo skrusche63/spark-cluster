@@ -42,26 +42,41 @@ case class LabeledPoint(
   label:String,features:Array[Double]
 )
 
+case class ClusteredPoint(
+  cluster:Int,distance:Double,point:LabeledPoint
+)
+
+case class ClusteredPoints(items:List[ClusteredPoint])
+
+case class NumberedSequence(sid:Int,data:Array[Array[Int]])
+
+case class ClusteredSequence(
+  cluster:Int,similarity:Double,sequence:NumberedSequence
+)
+
+case class ClusteredSequences(items:List[ClusteredSequence])
+
 object Serializer {
     
   implicit val formats = Serialization.formats(NoTypeHints)
 
-  /*
-   * Support for serialization and deserialization of job descriptions
-   */
-  def serializeJob(job:JobDesc):String = write(job)
+  def serializeClusteredPoints(points:ClusteredPoints):String = write(points)
+  def deserializeClusteredPoints(points:String):ClusteredPoints = read[ClusteredPoints](points)
 
+  def serializeJob(job:JobDesc):String = write(job)
   def deserializeJob(job:String):JobDesc = read[JobDesc](job)
 
   def serializeResponse(response:ServiceResponse):String = write(response)
-  
   def deserializeRequest(request:String):ServiceRequest = read[ServiceRequest](request)
+
+  def serializeClusteredSequences(sequences:ClusteredSequences):String = write(sequences)
+  def deserializeClusteredSequences(sequences:String):ClusteredSequences = read[ClusteredSequences](sequences)
   
 }
 
 object Algorithms {
   
-  val KMEANS:String     = "KMEANS"
+  val FEA_KMEANS:String = "FEQ_KMEANS"
   val SEQ_KMEANS:String = "SEQ_KMEANS"
   
 }
@@ -80,9 +95,11 @@ object Messages {
 
   def GENERAL_ERROR(uid:String):String = String.format("""A general error appeared for uid '%s'.""", uid)
 
-  def MINING_STARTED(uid:String) = String.format("""Mining started for uid '%s'.""", uid)
+  def MODEL_BUILDING_STARTED(uid:String) = String.format("""Model building started for uid '%s'.""", uid)
   
   def MISSING_PARAMETERS(uid:String):String = String.format("""Parameters are missing for uid '%s'.""", uid)
+
+  def MODEL_DOES_NOT_EXIST(uid:String):String = String.format("""The model for uid '%s' does not exist.""", uid)
  
   def NO_ALGORITHM_PROVIDED(uid:String):String = String.format("""No algorithm provided for uid '%s'.""", uid)
 
