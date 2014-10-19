@@ -21,14 +21,12 @@ package de.kp.spark.cluster.source
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
-import org.apache.hadoop.io.{ArrayWritable,MapWritable,NullWritable,Text}
-
-import org.elasticsearch.hadoop.mr.EsInputFormat
-
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
 
 import de.kp.spark.cluster.Configuration
+
+import de.kp.spark.cluster.io.ElasticReader
 
 import de.kp.spark.cluster.model._
 import de.kp.spark.cluster.spec.{FeatureSpec,SequenceSpec}
@@ -42,16 +40,16 @@ class ElasticSource(@transient sc:SparkContext) extends Serializable {
  
   def features(params:Map[String,Any]):RDD[LabeledPoint] = {
     
+    val index = params("index").asInstanceOf[String]
+    val mapping = params("type").asInstanceOf[String]
+    
     val query = params("query").asInstanceOf[String]
-    val resource = params("resource").asInstanceOf[String]
     
     val spec = sc.broadcast(FeatureSpec.get)
     
     /* Connect to Elasticsearch */
-    val source = sc.newAPIHadoopRDD(conf, classOf[EsInputFormat[Text, MapWritable]], classOf[Text], classOf[MapWritable])
-    val dataset = source.map(hit => toMap(hit._2))
-
-    dataset.map(data => {
+    val rawset = new ElasticReader(sc,index,mapping,query).read
+    rawset.map(data => {
       
       val fields = spec.value
 
@@ -70,15 +68,15 @@ class ElasticSource(@transient sc:SparkContext) extends Serializable {
   
   def sequences(params:Map[String,Any] = Map.empty[String,Any]):RDD[NumberedSequence] = {
     
+    val index = params("index").asInstanceOf[String]
+    val mapping = params("type").asInstanceOf[String]
+    
     val query = params("query").asInstanceOf[String]
-    val resource = params("resource").asInstanceOf[String]
      
     val spec = sc.broadcast(SequenceSpec.get)
 
     /* Connect to Elasticsearch */
-    val source = sc.newAPIHadoopRDD(conf, classOf[EsInputFormat[Text, MapWritable]], classOf[Text], classOf[MapWritable])
-    val rawset = source.map(hit => toMap(hit._2))
-
+    val rawset = new ElasticReader(sc,index,mapping,query).read
     val dataset = rawset.map(data => {
       
       val site = data(spec.value("site")._1)
@@ -123,8 +121,8 @@ class ElasticSource(@transient sc:SparkContext) extends Serializable {
       
     }).coalesce(1)
 
-    val index = sc.parallelize(Range.Long(0,sequences.count,1),sequences.partitions.size)
-    val zip = sequences.zip(index).map(valu => (valu._2.toInt,valu._1))
+    val ids = sc.parallelize(Range.Long(0,sequences.count,1),sequences.partitions.size)
+    val zip = sequences.zip(ids).map(valu => (valu._2.toInt,valu._1))
 
     zip.map(valu => {
       
@@ -134,34 +132,6 @@ class ElasticSource(@transient sc:SparkContext) extends Serializable {
       new NumberedSequence(sid,itemsets)
 
     })
-    
-  }
-  
-  /**
-   * A helper method to convert a MapWritable into a Map
-   */
-  private def toMap(mw:MapWritable):Map[String,String] = {
-      
-    val m = mw.map(e => {
-        
-      val k = e._1.toString        
-      val v = (if (e._2.isInstanceOf[Text]) e._2.toString()
-        else if (e._2.isInstanceOf[ArrayWritable]) {
-        
-          val array = e._2.asInstanceOf[ArrayWritable].get()
-          array.map(item => {
-            
-            (if (item.isInstanceOf[NullWritable]) "" else item.asInstanceOf[Text].toString)}).mkString(",")
-            
-        }
-        else "")
-        
-    
-      k -> v
-        
-    })
-      
-    m.toMap
     
   }
 
