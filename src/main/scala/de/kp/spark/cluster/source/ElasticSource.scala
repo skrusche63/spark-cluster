@@ -40,8 +40,8 @@ class ElasticSource(@transient sc:SparkContext) extends Serializable {
  
   def features(params:Map[String,Any]):RDD[LabeledPoint] = {
     
-    val index = params("index").asInstanceOf[String]
-    val mapping = params("type").asInstanceOf[String]
+    val index = params("source.index").asInstanceOf[String]
+    val mapping = params("source.type").asInstanceOf[String]
     
     val query = params("query").asInstanceOf[String]
     
@@ -67,9 +67,13 @@ class ElasticSource(@transient sc:SparkContext) extends Serializable {
   }
   
   def sequences(params:Map[String,Any] = Map.empty[String,Any]):RDD[NumberedSequence] = {
-    
-    val index = params("index").asInstanceOf[String]
-    val mapping = params("type").asInstanceOf[String]
+    /*
+     * Elasticsearch is used as a data source as well as a data sink;
+     * this implies that the respective indexes and mappings have to
+     * be distinguished
+     */    
+    val index = params("source.index").asInstanceOf[String]
+    val mapping = params("source.type").asInstanceOf[String]
     
     val query = params("query").asInstanceOf[String]
      

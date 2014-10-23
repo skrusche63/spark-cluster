@@ -67,6 +67,10 @@ class ClusterMaster(@transient val sc:SparkContext) extends Actor with ActorLogg
          * having retrieved a FINISHED status
          */
         case "status" => ask(actor("builder"),deser).mapTo[ServiceResponse]
+        /*
+         * Request to track either data for a feature or sequence clustering
+         */
+        case "track" => ask(actor("tracker"),deser).mapTo[ServiceResponse]
        
         case _ => {
 
@@ -104,6 +108,8 @@ class ClusterMaster(@transient val sc:SparkContext) extends Actor with ActorLogg
       case "builder" => context.actorOf(Props(new ClusterBuilder(sc)))
         
       case "questor" => context.actorOf(Props(new ClusterQuestor()))
+        
+      case "tracker" => context.actorOf(Props(new ClusterTracker()))
       
       case _ => null
       

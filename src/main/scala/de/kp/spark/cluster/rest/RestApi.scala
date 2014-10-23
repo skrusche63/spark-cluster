@@ -85,8 +85,14 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkCon
 	      ctx => doStatus(ctx)
 	    }
 	  }
-    }
-    
+    }  ~ 
+    path("track" / Segment) {subject => 
+	  post {
+	    respondWithStatus(OK) {
+	      ctx => doTrack(ctx,subject)
+	    }
+	  }
+    }     
   }
 
   private def doGet[T](ctx:RequestContext,subject:String) = {
@@ -96,6 +102,20 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkCon
       case "features" => doRequest(ctx,"cluster","get:features")
       
 	  case "sequences" => doRequest(ctx,"cluster","get:sequence")
+	      
+	  case _ => {}
+	  
+    }
+    
+  }
+
+  private def doTrack[T](ctx:RequestContext,subject:String) = {
+	    
+    subject match {
+
+      case "features" => doRequest(ctx,"cluster","track:features")
+      
+	  case "sequences" => doRequest(ctx,"cluster","track:sequence")
 	      
 	  case _ => {}
 	  
