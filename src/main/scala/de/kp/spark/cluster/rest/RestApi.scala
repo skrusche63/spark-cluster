@@ -115,7 +115,7 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkCon
 
       case "features" => doRequest(ctx,"cluster","track:features")
       
-	  case "sequences" => doRequest(ctx,"cluster","track:sequence")
+	  case "sequences" => doRequest(ctx,"cluster","track:sequences")
 	      
 	  case _ => {}
 	  
