@@ -4,6 +4,11 @@
 
 ## Reactive Similarity Analysis Engine
 
+![Similarity Analysis Engine Overview](https://raw.githubusercontent.com/skrusche63/spark-cluster/master/images/similarity-analysis-overview.png)
+
+The Similarity Analysis Engine is one of the nine members of the open ensemble and is built to find relevant similarities in dynamic activity sequences and 
+identify customers by their journeys. It is based on the new S2MP algorithm to find similarities for sequential patterns in large scale datasets. 
+
 
 #### Similarity of Sequential Patterns (S2MP)
 
