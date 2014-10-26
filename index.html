@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Similarity Analysis Engine : Next-Generation Audience Segmentation">
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Similarity Analysis Engine</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/skrusche63/spark-cluster">View on GitHub</a>
+
+          <h1 id="project_title">Similarity Analysis Engine</h1>
+          <h2 id="project_tagline">Next-Generation Audience Segmentation</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/skrusche63/spark-cluster/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/skrusche63/spark-cluster/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <p><img src="https://raw.githubusercontent.com/skrusche63/spark-cluster/master/images/predictiveworks.png" alt="Elasticworks."></p>
+
+<p><strong>Predictiveworks.</strong> is an open ensemble of predictive engines and has been made to cover a wide range of today's analytics requirements. <strong>Predictiveworks.</strong>  brings the power of predictive analytics to Elasticsearch.</p>
+
+<h2>
+<a name="reactive-similarity-analysis-engine" class="anchor" href="#reactive-similarity-analysis-engine"><span class="octicon octicon-link"></span></a>Reactive Similarity Analysis Engine</h2>
+
+<p><img src="https://raw.githubusercontent.com/skrusche63/spark-cluster/master/images/similarity-analysis-overview.png" alt="Similarity Analysis Engine Overview"></p>
+
+<p>The Similarity Analysis Engine is one of the nine members of the open ensemble and is built to find relevant similarities in dynamic activity sequences and 
+identify customers by their journeys. It is based on the new S2MP algorithm to find similarities for sequential patterns in large scale datasets. </p>
+
+<h4>
+<a name="similarity-of-sequential-patterns-s2mp" class="anchor" href="#similarity-of-sequential-patterns-s2mp"><span class="octicon octicon-link"></span></a>Similarity of Sequential Patterns (S2MP)</h4>
+
+<p>Computing the similarity of sequential patterns is an important task to find regularities in sequences of data. This is the key to understand customer behavior, build profiles and signatures, and also to group similar customers by their temporally behavior.    </p>
+
+<p>The similarity of sequential patterns may be used to cluster, (a) the content of sequence databases to retrieve more homogeneous datasets for sequential pattern mining, or (b) to group the respective mining results. The latter approach is used for customer segmentation based on similar engagement behavior.</p>
+
+<p>For real-world applications, it is important to measure the similarity of more complex sequences, built from itemsets rather than single items. A customer's purchase behavior is an example of such a more complex sequence.</p>
+
+<p>There exist already some similarity measures such as <code>Edit distance</code> (Levenshtein, 1996) and <code>LCS</code> (Longest Common Subsequence, 2002), but these methods do not take the content of the itemsets and their order and position in the sequences properly into account.</p>
+
+<p>We therefore decided to implement the <code>S2MP</code> similarity measure proposed by <a href="http://crpit.com/confpapers/CRPITV87Saneifar.pdf">Saneifar et al</a>, which successfully overcomes the mentioned shortcomings.</p>
+
+<p>From the similarity measure <code>sim(i,j)</code> of two sequences <code>i</code>and <code>j</code> it is straightforward to build the sequence engagement vector for sequence <code>i</code> with all other sequences. These vectors may then be used to build clusters with algorithms such as KMeans.</p>
+
+<p>In market basket analysis or web usage mining, a sequence of purchase transactions or web sessions is directly associated with a certain customer or visitor. The clusters built from KMeans and S2MP may then be applied to group customers with similar buying or web usage behavior.</p>
+
+<hr>
+
+<h4>
+<a name="clustering-of-sequential-patterns-s-kmeans" class="anchor" href="#clustering-of-sequential-patterns-s-kmeans"><span class="octicon octicon-link"></span></a>Clustering of Sequential Patterns (S-KMeans)</h4>
+
+<p>Clustering of sequential data or patterns becomes more and more relevant for business applications. <code>SKMeans</code> is a modified version of Apache Spark's KMeans algorithm and is optimized for clustering sequential patterns based on the <code>S2MP</code> similarity measure. </p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Similarity Analysis Engine maintained by <a href="https://github.com/skrusche63">skrusche63</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
