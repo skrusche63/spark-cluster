@@ -36,9 +36,6 @@ class ClusterBuilder(@transient val sc:SparkContext) extends Actor with ActorLog
 
   implicit val ec = context.dispatcher
   
-  private val algorithms = Array(Algorithms.FEA_KMEANS,Algorithms.SEQ_KMEANS)
-  private val sources = Array(Sources.ELASTIC,Sources.FILE,Sources.JDBC)
-  
   def receive = {
 
     case req:ServiceRequest => {
@@ -133,7 +130,7 @@ class ClusterBuilder(@transient val sc:SparkContext) extends Actor with ActorLog
       }
         
       case Some(algorithm) => {
-        if (algorithms.contains(algorithm) == false) {
+        if (Algorithms.isAlgorithm(algorithm) == false) {
           return Some(Messages.ALGORITHM_IS_UNKNOWN(uid,algorithm))    
         }
           
@@ -148,7 +145,7 @@ class ClusterBuilder(@transient val sc:SparkContext) extends Actor with ActorLog
       }
         
       case Some(source) => {
-        if (sources.contains(source) == false) {
+        if (Sources.isSource(source) == false) {
           return Some(Messages.SOURCE_IS_UNKNOWN(uid,source))    
         }          
       }
@@ -162,10 +159,10 @@ class ClusterBuilder(@transient val sc:SparkContext) extends Actor with ActorLog
   private def actor(req:ServiceRequest):ActorRef = {
 
     val algorithm = req.data("algorithm")
-    if (algorithm == Algorithms.FEA_KMEANS) {      
+    if (algorithm == Algorithms.KMEANS) {      
       context.actorOf(Props(new FeatureActor(sc)))   
 
-    } else if (algorithm == Algorithms.SEQ_KMEANS) {
+    } else if (algorithm == Algorithms.SKMEANS) {
       context.actorOf(Props(new SequenceActor(sc)))   
       
     } else {
