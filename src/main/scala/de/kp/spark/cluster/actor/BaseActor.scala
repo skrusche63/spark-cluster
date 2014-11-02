@@ -1,4 +1,4 @@
-package de.kp.spark.cluster.spec
+package de.kp.spark.cluster.actor
 /* Copyright (c) 2014 Dr. Krusche & Partner PartG
 * 
 * This file is part of the Spark-Cluster project
@@ -18,40 +18,23 @@ package de.kp.spark.cluster.spec
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-import de.kp.spark.cluster.redis.RedisCache
+import akka.actor.{Actor,ActorLogging,ActorRef,Props}
+import de.kp.spark.cluster.model._
 
-import scala.xml._
-import scala.collection.mutable.ArrayBuffer
-
-object FeatureSpec extends Serializable {
-  
-  val path = "features.xml"
-
-  def get(uid:String):List[String] = {
-
-    val fields = ArrayBuffer.empty[String]
-  
-    try {
-          
-      val root = if (RedisCache.metaExists(uid)) {      
-        XML.load(RedisCache.meta(uid))
+abstract class BaseActor extends Actor with ActorLogging {
+ 
+  protected def failure(req:ServiceRequest,message:String):ServiceResponse = {
     
-      } else {
-        XML.load(getClass.getClassLoader.getResource(path))  
+    if (req == null) {
+      val data = Map("message" -> message)
+      new ServiceResponse("","",data,ClusterStatus.FAILURE)	
       
-     }
-   
-     for (field <- root \ "field") {
-       fields += field.text 
-     }
-      
-    } catch {
-      case e:Exception => {}
+    } else {
+      val data = Map("uid" -> req.data("uid"), "message" -> message)
+      new ServiceResponse(req.service,req.task,data,ClusterStatus.FAILURE)	
+    
     }
-    
-    fields.toList
     
   }
 
 }
-

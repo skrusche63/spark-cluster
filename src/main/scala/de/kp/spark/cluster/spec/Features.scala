@@ -21,42 +21,42 @@ package de.kp.spark.cluster.spec
 import de.kp.spark.cluster.redis.RedisCache
 
 import scala.xml._
-import scala.collection.mutable.HashMap
+import scala.collection.mutable.ArrayBuffer
 
-object SequenceSpec {
+object Features extends Serializable {
   
-  val path = "sequences.xml"
+  val path = "features.xml"
 
-  def get(uid:String):Map[String,(String,String)] = {
+  def get(uid:String):List[String] = {
 
-    val fields = HashMap.empty[String,(String,String)]
+    val fields = ArrayBuffer.empty[String]
   
     try {
           
-      val root = if (RedisCache.metaExists(uid)) {      
-        XML.load(RedisCache.meta(uid))
-    
-      } else {
-        XML.load(getClass.getClassLoader.getResource(path))  
-      
-      }
-   
-      for (field <- root \ "field") {
-      
-        val _name  = (field \ "@name").toString
-        val _type  = (field \ "@type").toString
+      if (RedisCache.fieldsExist(uid)) {      
+        
+        val fieldspec = RedisCache.fields(uid)
+        for (field <- fieldspec.items) {
+          fields += field.name
+        }
 
-        val _mapping = field.text
-        fields += _name -> (_mapping,_type) 
+        
+      } else {
+
+        val root = XML.load(getClass.getClassLoader.getResource(path))     
+        for (field <- root \ "field") {
+          fields += field.text 
+        }
       
-      }
+     }
       
     } catch {
       case e:Exception => {}
     }
     
-    fields.toMap
+    fields.toList
     
   }
 
 }
+

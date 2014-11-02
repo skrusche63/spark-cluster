@@ -18,12 +18,10 @@ package de.kp.spark.cluster.actor
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-import akka.actor.{Actor,ActorLogging}
-
 import de.kp.spark.cluster.model._
 import de.kp.spark.cluster.sink.RedisSink
 
-class ClusterQuestor extends Actor with ActorLogging {
+class ClusterQuestor extends BaseActor {
 
   implicit val ec = context.dispatcher
   private val sink = new RedisSink()
@@ -116,19 +114,6 @@ class ClusterQuestor extends Actor with ActorLogging {
 
     }
     
-  }
-
-  private def failure(req:ServiceRequest,message:String):ServiceResponse = {
-    
-    if (req == null) {
-      val data = Map("message" -> message)
-      new ServiceResponse("","",data,ClusterStatus.FAILURE)	
-      
-    } else {
-      val data = Map("uid" -> req.data("uid"), "message" -> message)
-      new ServiceResponse(req.service,req.task,data,ClusterStatus.FAILURE)	
-    
-    }
   }
   
 }

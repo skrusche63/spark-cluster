@@ -19,7 +19,7 @@ package de.kp.spark.cluster.actor
  */
 
 import org.apache.spark.SparkContext
-import akka.actor.{Actor,ActorLogging,ActorRef,Props}
+import akka.actor.{ActorRef,Props}
 
 import akka.pattern.ask
 import akka.util.Timeout
@@ -32,7 +32,7 @@ import de.kp.spark.cluster.model._
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.Future
 
-class ClusterMaster(@transient val sc:SparkContext) extends Actor with ActorLogging {
+class ClusterMaster(@transient val sc:SparkContext) extends BaseActor {
   
   val (duration,retries,time) = Configuration.actor   
 
@@ -61,6 +61,10 @@ class ClusterMaster(@transient val sc:SparkContext) extends Actor with ActorLogg
          * Starting the cluster building
          */
         case "train"  => ask(actor("builder"),deser).mapTo[ServiceResponse]
+        /*
+         * Request to register field specification
+         */
+        case "register"  => ask(actor("registrar"),deser).mapTo[ServiceResponse]
         /*
          * Request the actual status of a cluster building task;
          * note, that get requests should only be invoked after 
@@ -109,26 +113,14 @@ class ClusterMaster(@transient val sc:SparkContext) extends Actor with ActorLogg
         
       case "questor" => context.actorOf(Props(new ClusterQuestor()))
         
+      case "registrar" => context.actorOf(Props(new ClusterRegistrar()))
+        
       case "tracker" => context.actorOf(Props(new ClusterTracker()))
       
       case _ => null
       
     }
   
-  }
-
-  private def failure(req:ServiceRequest,message:String):ServiceResponse = {
-    
-    if (req == null) {
-      val data = Map("message" -> message)
-      new ServiceResponse("","",data,ClusterStatus.FAILURE)	
-      
-    } else {
-      val data = Map("uid" -> req.data("uid"), "message" -> message)
-      new ServiceResponse(req.service,req.task,data,ClusterStatus.FAILURE)	
-    
-    }
-    
   }
 
 }

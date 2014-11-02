@@ -79,6 +79,13 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkCon
 	    }
 	  }
     }  ~ 
+    path("register" / Segment) {subject =>  
+	  post {
+	    respondWithStatus(OK) {
+	      ctx => doRegister(ctx,subject)
+	    }
+	  }
+    }  ~ 
     path("status") { 
 	  post {
 	    respondWithStatus(OK) {
@@ -101,12 +108,26 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkCon
 
       case "features" => doRequest(ctx,"cluster","get:features")
       
-	  case "sequences" => doRequest(ctx,"cluster","get:sequence")
+	  case "sequences" => doRequest(ctx,"cluster","get:sequences")
 	      
 	  case _ => {}
 	  
     }
     
+  }
+
+  private def doRegister[T](ctx:RequestContext,subject:String) = {
+ 
+    subject match {
+
+      case "features" => doRequest(ctx,"cluster","register:features")
+      
+	  case "sequences" => doRequest(ctx,"cluster","register:sequences")
+	      
+	  case _ => {}
+	  
+    }
+
   }
 
   private def doTrack[T](ctx:RequestContext,subject:String) = {

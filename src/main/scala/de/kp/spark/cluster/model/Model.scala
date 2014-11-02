@@ -29,6 +29,14 @@ case class ServiceRequest(
 case class ServiceResponse(
   service:String,task:String,data:Map[String,String],status:String
 )
+/*
+ * The Field and Fields classes are used to specify the fields with
+ * respect to the data source provided
+ */
+case class Field(
+  name:String,datatype:String,value:String
+)
+case class Fields(items:List[Field])
 
 /*
  * Service requests are mapped onto job descriptions and are stored
@@ -59,6 +67,9 @@ case class ClusteredSequences(items:List[ClusteredSequence])
 object Serializer {
     
   implicit val formats = Serialization.formats(NoTypeHints)
+  
+  def serializeFields(fields:Fields):String = write(fields)  
+  def deserializeFields(fields:String):Fields = read[Fields](fields)
 
   def serializeClusteredPoints(points:ClusteredPoints):String = write(points)
   def deserializeClusteredPoints(points:String):ClusteredPoints = read[ClusteredPoints](points)

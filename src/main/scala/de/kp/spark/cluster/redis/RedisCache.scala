@@ -27,14 +27,14 @@ object RedisCache {
 
   val client  = RedisClient()
   val service = "cluster"
-  
-  def addMeta(req:ServiceRequest,meta:String) {
-   
+
+  def addFields(req:ServiceRequest,fields:Fields) {
+    
     val now = new Date()
     val timestamp = now.getTime()
     
-    val k = "meta:" + req.data("uid")
-    val v = "" + timestamp + ":" + meta
+    val k = "fields:" + service + ":" + req.data("uid")
+    val v = "" + timestamp + ":" + Serializer.serializeFields(fields)
     
     client.zadd(k,timestamp,v)
     
@@ -53,10 +53,10 @@ object RedisCache {
     client.zadd(k,timestamp,v)
     
   }
-  
-  def metaExists(uid:String):Boolean = {
 
-    val k = "meta:" + uid
+  def fieldsExist(uid:String):Boolean = {
+
+    val k = "fields:" + service + ":" + uid
     client.exists(k)
     
   }
@@ -88,17 +88,18 @@ object RedisCache {
      
   }
   
-  def meta(uid:String):String = {
+  def fields(uid:String):Fields = {
 
-    val k = "meta:" + uid
+    val k = "fields:" + service + ":" + uid
     val metas = client.zrange(k, 0, -1)
 
     if (metas.size() == 0) {
-      null
+      new Fields(List.empty[Field])
     
     } else {
       
-      metas.toList.last
+      val fields = metas.toList.last
+      Serializer.deserializeFields(fields)
       
     }
 

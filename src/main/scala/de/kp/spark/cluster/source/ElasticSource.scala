@@ -29,7 +29,7 @@ import de.kp.spark.cluster.Configuration
 import de.kp.spark.cluster.io.ElasticReader
 
 import de.kp.spark.cluster.model._
-import de.kp.spark.cluster.spec.{FeatureSpec,SequenceSpec}
+import de.kp.spark.cluster.spec.{Features,Sequences}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -47,7 +47,7 @@ class ElasticSource(@transient sc:SparkContext) extends Serializable {
     
     val query = params("query").asInstanceOf[String]
     
-    val spec = sc.broadcast(FeatureSpec.get(uid))
+    val spec = sc.broadcast(Features.get(uid))
     
     /* Connect to Elasticsearch */
     val rawset = new ElasticReader(sc,index,mapping,query).read
@@ -80,7 +80,7 @@ class ElasticSource(@transient sc:SparkContext) extends Serializable {
     val query = params("query").asInstanceOf[String]
     
     val uid = params("uid").asInstanceOf[String]    
-    val spec = sc.broadcast(SequenceSpec.get(uid))
+    val spec = sc.broadcast(Sequences.get(uid))
 
     /* Connect to Elasticsearch */
     val rawset = new ElasticReader(sc,index,mapping,query).read

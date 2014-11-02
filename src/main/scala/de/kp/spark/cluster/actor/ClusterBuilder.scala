@@ -20,7 +20,7 @@ package de.kp.spark.cluster.actor
 
 import org.apache.spark.SparkContext
 
-import akka.actor.{Actor,ActorLogging,ActorRef,Props}
+import akka.actor.{ActorRef,Props}
 import akka.pattern.ask
 import akka.util.Timeout
 
@@ -32,7 +32,7 @@ import de.kp.spark.cluster.redis.RedisCache
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
-class ClusterBuilder(@transient val sc:SparkContext) extends Actor with ActorLogging {
+class ClusterBuilder(@transient val sc:SparkContext) extends BaseActor {
 
   implicit val ec = context.dispatcher
   
@@ -187,20 +187,6 @@ class ClusterBuilder(@transient val sc:SparkContext) extends Actor with ActorLog
     val data = Map("uid" -> uid)
                 
     new ServiceResponse(req.service,req.task,data,RedisCache.status(uid))	
-
-  }
-
-  private def failure(req:ServiceRequest,message:String):ServiceResponse = {
-    
-    if (req == null) {
-      val data = Map("message" -> message)
-      new ServiceResponse("","",data,ClusterStatus.FAILURE)	
-      
-    } else {
-      val data = Map("uid" -> req.data("uid"), "message" -> message)
-      new ServiceResponse(req.service,req.task,data,ClusterStatus.FAILURE)	
-    
-    }
 
   }
 

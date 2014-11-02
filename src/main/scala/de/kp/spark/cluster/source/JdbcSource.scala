@@ -24,7 +24,7 @@ import org.apache.spark.rdd.RDD
 import de.kp.spark.cluster.model._
 
 import de.kp.spark.cluster.io.JdbcReader
-import de.kp.spark.cluster.spec.{FeatureSpec,SequenceSpec}
+import de.kp.spark.cluster.spec.{Features,Sequences}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -33,7 +33,7 @@ class JdbcSource(@transient sc:SparkContext) extends Serializable {
   def features(params:Map[String,Any]):RDD[LabeledPoint] = {
     
     val uid = params("uid").asInstanceOf[String]         
-    val fields = FeatureSpec.get(uid)
+    val fields = Features.get(uid)
     /*
      * Convert field specification into broadcast variable
      */
@@ -65,7 +65,7 @@ class JdbcSource(@transient sc:SparkContext) extends Serializable {
     
     val uid = params("uid").asInstanceOf[String]    
      
-    val fieldspec = SequenceSpec.get(uid)
+    val fieldspec = Sequences.get(uid)
     val fields = fieldspec.map(kv => kv._2._1).toList    
     /*
      * Convert field specification into broadcast variable
