@@ -74,7 +74,7 @@ class ClusterRegistrar extends BaseActor {
  
             RedisCache.addFields(req, new Fields(fields.toList))
         
-            new ServiceResponse("outlier","register",Map("uid"-> uid),ClusterStatus.SUCCESS)
+            new ServiceResponse("cluster","register",Map("uid"-> uid),ClusterStatus.SUCCESS)
         
           } catch {
             case throwable:Throwable => failure(req,throwable.getMessage)
