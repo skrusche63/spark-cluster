@@ -97,7 +97,7 @@ class ClusterRegistrar extends BaseActor {
             fields += new Field("user","string",req.data("user"))
             fields += new Field("group","string",req.data("group"))
 
-            fields += new Field("item","integer",req.data("integer"))
+            fields += new Field("item","integer",req.data("item"))
             
             RedisCache.addFields(req, new Fields(fields.toList))
         
