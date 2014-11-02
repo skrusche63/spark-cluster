@@ -26,7 +26,7 @@ import scala.collection.JavaConversions._
 object RedisCache {
 
   val client  = RedisClient()
-  val service = "cluster"
+  val service = "similarity"
 
   def addFields(req:ServiceRequest,fields:Fields) {
     
