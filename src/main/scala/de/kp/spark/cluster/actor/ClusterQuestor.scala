@@ -35,7 +35,7 @@ class ClusterQuestor extends BaseActor {
 
       req.task match {
 
-        case "get:features" => {
+        case "get:feature" => {
           /*
            * This request retrieves a set of clustered features
             */
@@ -51,7 +51,7 @@ class ClusterQuestor extends BaseActor {
               
             } else {
 
-              val data = Map("uid" -> uid, "features" -> points)
+              val data = Map("uid" -> uid, "feature" -> points)
               new ServiceResponse(req.service,req.task,data,ClusterStatus.SUCCESS)
 
             }
@@ -63,7 +63,7 @@ class ClusterQuestor extends BaseActor {
           
         }
 
-        case "get:sequences" => {
+        case "get:sequence" => {
           /*
            * This request retrieves a set of clustered sequences
             */
@@ -79,7 +79,7 @@ class ClusterQuestor extends BaseActor {
               
             } else {
 
-              val data = Map("uid" -> uid, "sequences" -> sequences)
+              val data = Map("uid" -> uid, "sequence" -> sequences)
               new ServiceResponse(req.service,req.task,data,ClusterStatus.SUCCESS)
 
             }

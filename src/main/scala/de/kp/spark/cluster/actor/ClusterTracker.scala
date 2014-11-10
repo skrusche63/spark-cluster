@@ -41,7 +41,7 @@ class ClusterTracker extends Actor with ActorLogging {
 
       req.task match {
 
-        case "track:features" => {
+        case "track:feature" => {
           
           val data = Map("uid" -> uid, "message" -> Messages.DATA_TO_TRACK_RECEIVED(uid))
           val response = new ServiceResponse(req.service,req.task,data,ClusterStatus.SUCCESS)	
@@ -53,7 +53,7 @@ class ClusterTracker extends Actor with ActorLogging {
           
         }
         
-        case "track:sequences" => {
+        case "track:sequence" => {
           
           val data = Map("uid" -> uid, "message" -> Messages.DATA_TO_TRACK_RECEIVED(uid))
           val response = new ServiceResponse(req.service,req.task,data,ClusterStatus.SUCCESS)	

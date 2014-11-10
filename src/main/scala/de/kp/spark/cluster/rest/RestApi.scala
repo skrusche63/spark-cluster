@@ -106,9 +106,9 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkCon
 	    
     subject match {
 
-      case "features" => doRequest(ctx,"cluster","get:features")
+      case "feature" => doRequest(ctx,"cluster","get:feature")
       
-	  case "sequences" => doRequest(ctx,"cluster","get:sequences")
+	  case "sequence" => doRequest(ctx,"cluster","get:sequence")
 	      
 	  case _ => {}
 	  
@@ -120,9 +120,9 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkCon
  
     subject match {
 
-      case "features" => doRequest(ctx,"cluster","register:features")
+      case "feature" => doRequest(ctx,"cluster","register:feature")
       
-	  case "sequences" => doRequest(ctx,"cluster","register:sequences")
+	  case "sequence" => doRequest(ctx,"cluster","register:sequence")
 	      
 	  case _ => {}
 	  
@@ -134,9 +134,9 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkCon
 	    
     subject match {
 
-      case "features" => doRequest(ctx,"cluster","track:features")
+      case "feature" => doRequest(ctx,"cluster","track:feature")
       
-	  case "sequences" => doRequest(ctx,"cluster","track:sequences")
+	  case "sequence" => doRequest(ctx,"cluster","track:sequence")
 	      
 	  case _ => {}
 	  
