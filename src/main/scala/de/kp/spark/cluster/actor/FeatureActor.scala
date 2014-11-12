@@ -21,8 +21,6 @@ package de.kp.spark.cluster.actor
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
-import akka.actor.{Actor,ActorLogging,ActorRef,Props}
-
 import de.kp.spark.cluster.FKMeans
 import de.kp.spark.cluster.model._
 
@@ -31,7 +29,7 @@ import de.kp.spark.cluster.sink.RedisSink
 
 import de.kp.spark.cluster.redis.RedisCache
 
-class FeatureActor(@transient val sc:SparkContext) extends Actor with ActorLogging {
+class FeatureActor(@transient val sc:SparkContext) extends BaseActor {
 
   def receive = {
 
@@ -104,6 +102,9 @@ class FeatureActor(@transient val sc:SparkContext) extends Actor with ActorLoggi
     /* Update cache */
     RedisCache.addStatus(req,ClusterStatus.FINISHED)
     
+    /* Notify potential listeners */
+    notify(req,ClusterStatus.FINISHED)
+    
   }
   
   private def savePoints(req:ServiceRequest,points:ClusteredPoints) {
@@ -112,22 +113,5 @@ class FeatureActor(@transient val sc:SparkContext) extends Actor with ActorLoggi
     sink.addPoints(req,points)
      
   }
-  
-  private def response(req:ServiceRequest,missing:Boolean):ServiceResponse = {
-    
-    val uid = req.data("uid")
-    
-    if (missing == true) {
-      val data = Map("uid" -> uid, "message" -> Messages.MISSING_PARAMETERS(uid))
-      new ServiceResponse(req.service,req.task,data,ClusterStatus.FAILURE)	
-  
-    } else {
-      val data = Map("uid" -> uid, "message" -> Messages.MODEL_BUILDING_STARTED(uid))
-      new ServiceResponse(req.service,req.task,data,ClusterStatus.STARTED)	
-      
-  
-    }
-
-  }
-  
+   
 }
