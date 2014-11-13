@@ -51,29 +51,14 @@ class ClusterMaster(@transient val sc:SparkContext) extends BaseActor {
 
 	  val deser = Serializer.deserializeRequest(req)
 	  val response = deser.task.split(":")(0) match {
-        /*
-         * Retrieve all the similarities discovered by a 
-         * previous mining task; relevant is the 'uid' of 
-         * the mining task to get the respective data
-         */
-        case "get" => ask(actor("questor"),deser).mapTo[ServiceResponse]
-        /*
-         * Starting the cluster building
-         */
-        case "train"  => ask(actor("builder"),deser).mapTo[ServiceResponse]
-        /*
-         * Request to register field specification
-         */
+
+	    case "get" => ask(actor("questor"),deser).mapTo[ServiceResponse]
+	    case "index" => ask(actor("indexer"),deser).mapTo[ServiceResponse]
+ 
+	    case "train"  => ask(actor("builder"),deser).mapTo[ServiceResponse]
         case "register"  => ask(actor("registrar"),deser).mapTo[ServiceResponse]
-        /*
-         * Request the actual status of a cluster building task;
-         * note, that get requests should only be invoked after 
-         * having retrieved a FINISHED status
-         */
+
         case "status" => ask(actor("builder"),deser).mapTo[ServiceResponse]
-        /*
-         * Request to track either data for a feature or sequence clustering
-         */
         case "track" => ask(actor("tracker"),deser).mapTo[ServiceResponse]
        
         case _ => {
@@ -110,6 +95,8 @@ class ClusterMaster(@transient val sc:SparkContext) extends BaseActor {
     worker match {
   
       case "builder" => context.actorOf(Props(new ClusterBuilder(sc)))
+  
+      case "indexer" => context.actorOf(Props(new ClusterIndexer()))
         
       case "questor" => context.actorOf(Props(new ClusterQuestor()))
         

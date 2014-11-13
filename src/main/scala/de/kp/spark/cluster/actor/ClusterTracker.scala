@@ -20,33 +20,29 @@ package de.kp.spark.cluster.actor
 
 import java.util.Date
 
-import akka.actor.{Actor,ActorLogging}
-
 import de.kp.spark.cluster.model._
-
-import de.kp.spark.cluster.io.ElasticWriter
-import de.kp.spark.cluster.io.{ElasticBuilderFactory => EBF}
+import de.kp.spark.cluster.io.{ElasticBuilderFactory => EBF,ElasticWriter}
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
 
-class ClusterTracker extends Actor with ActorLogging {
+class ClusterTracker extends BaseActor {
   
   def receive = {
     
     case req:ServiceRequest => {
      
-      val origin = sender    
       val uid = req.data("uid")
+      val origin = sender    
+          
+      val data = Map("uid" -> uid, "message" -> Messages.DATA_TO_TRACK_RECEIVED(uid))
+      val response = new ServiceResponse(req.service,req.task,data,ClusterStatus.SUCCESS)	
+      
+      origin ! Serializer.serializeResponse(response)
 
       req.task match {
 
         case "track:feature" => {
-          
-          val data = Map("uid" -> uid, "message" -> Messages.DATA_TO_TRACK_RECEIVED(uid))
-          val response = new ServiceResponse(req.service,req.task,data,ClusterStatus.SUCCESS)	
-      
-          origin ! Serializer.serializeResponse(response)
           
           createLabeledPoint(req)
           context.stop(self)
@@ -54,11 +50,6 @@ class ClusterTracker extends Actor with ActorLogging {
         }
         
         case "track:sequence" => {
-          
-          val data = Map("uid" -> uid, "message" -> Messages.DATA_TO_TRACK_RECEIVED(uid))
-          val response = new ServiceResponse(req.service,req.task,data,ClusterStatus.SUCCESS)	
-      
-          origin ! Serializer.serializeResponse(response)
           
           createSequence(req)
           context.stop(self)
@@ -83,21 +74,13 @@ class ClusterTracker extends Actor with ActorLogging {
   private def createLabeledPoint(req:ServiceRequest) {
           
     try {
-      /*
-       * Elasticsearch is used as a source and also as a sink; this implies
-       * that the respective index and mapping must be distinguished; the source
-       * index and mapping used here is the same as for ElasticSource
-       */
-      val index   = req.data("source.index")
-      val mapping = req.data("source.type")
-    
-      val (names,types) = fieldspec(req.data)
-    
-      val builder = EBF.getBuilder("feature",mapping,names,types)
+
+      val index   = req.data("index")
+      val mapping = req.data("type")
+
       val writer = new ElasticWriter()
     
-      /* Prepare index and mapping for write */
-      val readyToWrite = writer.open(index,mapping,builder)
+      val readyToWrite = writer.open(index,mapping)
       if (readyToWrite == false) {
       
         writer.close()
@@ -156,27 +139,7 @@ class ClusterTracker extends Actor with ActorLogging {
     source
     
   }
- 
-  private def fieldspec(params:Map[String,String]):(List[String],List[String]) = {
-    
-    val records = params.filter(kv => kv._1.startsWith("lbl.") || kv._1.startsWith("fea."))
-    val spec = records.map(rec => {
-      
-      val (k,v) = rec
-      /* Actually all values are specified as string types */
-      val _name = k.replace("lbl.","").replace("fea.","")
-      val _type = "string"    
 
-      (_name,_type)
-    
-    })
-    
-    val names = spec.map(_._1).toList
-    val types = spec.map(_._2).toList
-    
-    (names,types)
-    
-  }  
   private def prepareSequence(params:Map[String,String]):java.util.Map[String,Object] = {
     
     val source = HashMap.empty[String,String]
@@ -196,19 +159,13 @@ class ClusterTracker extends Actor with ActorLogging {
   private def createSequence(req:ServiceRequest) {
           
     try {
-      /*
-       * Elasticsearch is used as a source and also as a sink; this implies
-       * that the respective index and mapping must be distinguished; the source
-       * index and mapping used here is the same as for ElasticSource
-       */
-      val index   = req.data("source.index")
-      val mapping = req.data("source.type")
+
+      val index   = req.data("index")
+      val mapping = req.data("type")
     
-      val builder = EBF.getBuilder("item",mapping)
       val writer = new ElasticWriter()
     
-      /* Prepare index and mapping for write */
-      val readyToWrite = writer.open(index,mapping,builder)
+      val readyToWrite = writer.open(index,mapping)
       if (readyToWrite == false) {
       
         writer.close()
@@ -239,20 +196,6 @@ class ClusterTracker extends Actor with ActorLogging {
 
     }
     
-  }
-
-  private def failure(req:ServiceRequest,message:String):ServiceResponse = {
-    
-    if (req == null) {
-      val data = Map("message" -> message)
-      new ServiceResponse("","",data,ClusterStatus.FAILURE)	
-      
-    } else {
-      val data = Map("uid" -> req.data("uid"), "message" -> message)
-      new ServiceResponse(req.service,req.task,data,ClusterStatus.FAILURE)	
-    
-    }
-
   }
  
 }

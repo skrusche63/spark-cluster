@@ -61,21 +61,17 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkCon
    */
   private def routes:Route = {
 
-    /*
-     * Action specifies a concept that is supported by the REST service;
-     * other concepts are content,feature,product and state
-     */
-    path("train") {
-	  post {
-	    respondWithStatus(OK) {
-	      ctx => doTrain(ctx)
-	    }
-	  }
-    }  ~ 
     path("get" / Segment) {subject => 
 	  post {
 	    respondWithStatus(OK) {
 	      ctx => doGet(ctx,subject)
+	    }
+	  }
+    }  ~ 
+    path("index" / Segment) {subject =>  
+	  post {
+	    respondWithStatus(OK) {
+	      ctx => doIndex(ctx,subject)
 	    }
 	  }
     }  ~ 
@@ -99,7 +95,14 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkCon
 	      ctx => doTrack(ctx,subject)
 	    }
 	  }
-    }     
+    }  ~      
+    path("train") {
+	  post {
+	    respondWithStatus(OK) {
+	      ctx => doTrain(ctx)
+	    }
+	  }
+    }
   }
 
   private def doGet[T](ctx:RequestContext,subject:String) = {
@@ -109,6 +112,20 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkCon
       case "feature" => doRequest(ctx,"cluster","get:feature")
       
 	  case "sequence" => doRequest(ctx,"cluster","get:sequence")
+	      
+	  case _ => {}
+	  
+    }
+    
+  }
+
+  private def doIndex[T](ctx:RequestContext,subject:String) = {
+	    
+    subject match {
+
+      case "feature" => doRequest(ctx,"cluster","index:feature")
+      
+	  case "sequence" => doRequest(ctx,"cluster","index:sequence")
 	      
 	  case _ => {}
 	  
