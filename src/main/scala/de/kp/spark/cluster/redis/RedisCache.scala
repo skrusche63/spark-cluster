@@ -143,7 +143,7 @@ object RedisCache {
 
   def statuses(uid:String):List[(Long,JobDesc)] = {
     
-    val k = "job:" + service + uid
+    val k = "job:" + service + ":" + uid
     val data = client.zrange(k, 0, -1)
 
     if (data.size() == 0) {
