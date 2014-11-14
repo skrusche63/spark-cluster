@@ -40,6 +40,18 @@ object RedisCache {
     
   }
   
+  def addRequest(req:ServiceRequest) {
+    
+    val now = new Date()
+    val timestamp = now.getTime()
+    
+    val k = "request:" + service
+    val v = "" + timestamp + ":" + Serializer.serializeRequest(req)
+    
+    client.lpush(k,v)
+    
+  }
+  
   def addStatus(req:ServiceRequest,status:String) {
    
     val (uid,task) = (req.data("uid"),req.task)
@@ -68,58 +80,86 @@ object RedisCache {
     
   }
   
-  /**
-   * Get timestamp when job with 'uid' started
-   */
-  def starttime(uid:String):Long = {
-    
-    val k = "job:" + service + ":" + uid
-    val jobs = client.zrange(k, 0, -1)
-
-    if (jobs.size() == 0) {
-      0
-    
-    } else {
-      
-      val first = jobs.iterator().next()
-      first.split(":")(0).toLong
-      
-    }
-     
-  }
-  
   def fields(uid:String):Fields = {
 
     val k = "fields:" + service + ":" + uid
-    val metas = client.zrange(k, 0, -1)
+    val data = client.zrange(k, 0, -1)
 
-    if (metas.size() == 0) {
+    if (data.size() == 0) {
       new Fields(List.empty[Field])
     
     } else {
       
-      val fields = metas.toList.last
+      val latest = data.toList.last
+      val Array(timestamp,fields) = latest.split(":")
+      
       Serializer.deserializeFields(fields)
       
     }
 
   }
+  
+  def requestsTotal():Long = {
+
+    val k = "request:" + service
+    if (client.exists(k)) client.llen(k) else 0
+    
+  }
+  
+  def requests(start:Long,end:Long):List[(Long,ServiceRequest)] = {
+    
+    val k = "request:" + service
+    val requests = client.lrange(k, start, end)
+    
+    requests.map(request => {
+      
+      val Array(ts,req) = request.split(":")
+      (ts.toLong,Serializer.deserializeRequest(req))
+      
+    }).toList
+    
+  }
  
   def status(uid:String):String = {
 
     val k = "job:" + service + ":" + uid
-    val jobs = client.zrange(k, 0, -1)
+    val data = client.zrange(k, 0, -1)
 
-    if (jobs.size() == 0) {
+    if (data.size() == 0) {
       null
     
     } else {
       
-      val job = Serializer.deserializeJob(jobs.toList.last)
+      /* Format: timestamp:jobdesc */
+      val last = data.toList.last
+      val Array(timestamp,jobdesc) = last.split(":")
+      
+      val job = Serializer.deserializeJob(jobdesc)
       job.status
       
     }
 
+  }
+
+  def statuses(uid:String):List[(Long,JobDesc)] = {
+    
+    val k = "job:" + service + uid
+    val data = client.zrange(k, 0, -1)
+
+    if (data.size() == 0) {
+      null
+    
+    } else {
+      
+      data.map(record => {
+        
+        val Array(timestamp,jobdesc) = record.split(":")
+        (timestamp.toLong,Serializer.deserializeJob(jobdesc))
+        
+      }).toList
+      
+    }
+    
   }
 
 }
