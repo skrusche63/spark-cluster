@@ -21,7 +21,10 @@ package de.kp.spark.cluster.source
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
+import de.kp.spark.cluster.Configuration
 import de.kp.spark.cluster.model._
+
+import de.kp.spark.cluster.spec.Features
 
 /**
  * FeatureSource is an abstraction layer on top the physical 
@@ -29,8 +32,12 @@ import de.kp.spark.cluster.model._
  */
 class FeatureSource(@transient sc:SparkContext) {
 
+  private val model = new FeatureModel(sc)
+  
   def get(data:Map[String,String]):RDD[LabeledPoint] = {
 
+    val uid = data("uid")
+    
     val source = data("source")
     source match {
       
@@ -39,19 +46,38 @@ class FeatureSource(@transient sc:SparkContext) {
        * index from Elasticsearch; the configuration parameters are retrieved 
        * from the service configuration 
        */    
-      case Sources.ELASTIC => new ElasticSource(sc).features(data)
+      case Sources.ELASTIC => {
+        
+        val rawset = new ElasticSource(sc).connect(data)
+        model.buildElastic(uid,rawset)
+        
+      }
       /* 
        * Discover clusters from feature set persisted as a file on the (HDFS) 
        * file system; the configuration parameters are retrieved from the service 
        * configuration  
        */    
-      case Sources.FILE => new FileSource(sc).features(data)
+      case Sources.FILE => {
+        
+        val path = Configuration.file()._1
+        
+        val rawset = new FileSource(sc).connect(data,path)        
+        model.buildFile(uid,rawset)
+        
+      }
       /*
        * Discover clusters from feature set persisted as an appropriate table 
        * from a JDBC database; the configuration parameters are retrieved from 
        * the service configuration
        */
-      case Sources.JDBC => new JdbcSource(sc).features(data)
+      case Sources.JDBC => {
+    
+        val fields = Features.get(uid)
+        
+        val rawset = new JdbcSource(sc).connect(data,fields)
+        model.buildJDBC(uid,rawset)
+        
+      }
       
       case _ => null
       

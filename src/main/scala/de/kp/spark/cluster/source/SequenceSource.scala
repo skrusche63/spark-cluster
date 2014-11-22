@@ -21,16 +21,23 @@ package de.kp.spark.cluster.source
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
+import de.kp.spark.cluster.Configuration
 import de.kp.spark.cluster.model._
+
+import de.kp.spark.cluster.spec.Sequences
 
 /**
  * A SequenceSource is an abstraction layer on top of
- * different physical data source to retrieve a sequence
+ * different physical data sources to retrieve a sequence
  * database
  */
 class SequenceSource (@transient sc:SparkContext) {
 
+  private val model = new SequenceModel(sc)
+  
   def get(data:Map[String,String]):RDD[NumberedSequence] = {
+    
+    val uid = data("uid")
     
     val source = data("source")
     source match {
@@ -40,19 +47,38 @@ class SequenceSource (@transient sc:SparkContext) {
        * search index from Elasticsearch; the configuration
        * parameters are retrieved from the service configuration 
        */    
-      case Sources.ELASTIC => new ElasticSource(sc).sequences(data)
+      case Sources.ELASTIC => {
+        
+        val rawset = new ElasticSource(sc).connect(data)
+        model.buildElastic(uid,rawset)
+        
+      }
       /* 
        * Retrieve sequence database persisted as a file on the (HDFS) 
        * file system; the configuration parameters are retrieved from 
        * the service configuration  
        */    
-      case Sources.FILE => new FileSource(sc).sequences(data)
+      case Sources.FILE => {
+        
+        val path = Configuration.file()._2
+
+        val rawset = new FileSource(sc).connect(data,path)
+        model.buildFile(uid,rawset)
+        
+      }
       /*
        * Retrieve sequence database persisted as an appropriate table 
        * from a JDBC database; the configuration parameters are retrieved 
        * from the service configuration
        */
-      case Sources.JDBC => new JdbcSource(sc).sequences(data)
+      case Sources.JDBC => {
+   
+        val fields = Sequences.get(uid).map(kv => kv._2._1).toList  
+                
+        val rawset = new JdbcSource(sc).connect(data,fields)
+        model.buildJDBC(uid,rawset)
+        
+      }
       
       case _ => null
       
