@@ -20,6 +20,8 @@ package de.kp.spark.cluster.actor
 
 import java.util.Date
 
+import de.kp.spark.core.model._
+
 import de.kp.spark.cluster.model._
 import de.kp.spark.cluster.io.{ElasticBuilderFactory => EBF,ElasticWriter}
 

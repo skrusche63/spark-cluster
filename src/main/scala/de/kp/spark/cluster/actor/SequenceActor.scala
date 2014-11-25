@@ -23,13 +23,13 @@ import java.util.Date
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
+import de.kp.spark.core.model._
+
 import de.kp.spark.cluster.{Configuration,SKMeans}
 import de.kp.spark.cluster.model._
 
 import de.kp.spark.cluster.source.SequenceSource
 import de.kp.spark.cluster.sink.RedisSink
-
-import de.kp.spark.cluster.redis.RedisCache
 
 class SequenceActor(@transient val sc:SparkContext) extends BaseActor {
   
@@ -48,13 +48,13 @@ class SequenceActor(@transient val sc:SparkContext) extends BaseActor {
  
         try {
 
-          RedisCache.addStatus(req,ClusterStatus.STARTED)
+          cache.addStatus(req,ClusterStatus.STARTED)
           
-          val dataset = new SequenceSource(sc).get(req.data)          
+          val dataset = new SequenceSource(sc).get(req)          
           findClusters(req,dataset,params)
 
         } catch {
-          case e:Exception => RedisCache.addStatus(req,ClusterStatus.FAILURE)          
+          case e:Exception => cache.addStatus(req,ClusterStatus.FAILURE)          
         }
 
       }
@@ -93,7 +93,7 @@ class SequenceActor(@transient val sc:SparkContext) extends BaseActor {
   
   private def findClusters(req:ServiceRequest,dataset:RDD[NumberedSequence],params:(Int,Int,Int)) {
 
-    RedisCache.addStatus(req,ClusterStatus.DATASET)
+    cache.addStatus(req,ClusterStatus.DATASET)
 
     /*
      * STEP #1: Build similarity matrix
@@ -122,7 +122,7 @@ class SequenceActor(@transient val sc:SparkContext) extends BaseActor {
     saveSequences(req,new ClusteredSequences(clustered))
           
     /* Update cache */
-    RedisCache.addStatus(req,ClusterStatus.FINISHED)
+    cache.addStatus(req,ClusterStatus.FINISHED)
     
     /* Notify potential listeners */
     notify(req,ClusterStatus.FINISHED)

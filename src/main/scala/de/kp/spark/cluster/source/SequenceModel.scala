@@ -21,14 +21,16 @@ package de.kp.spark.cluster.source
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
+import de.kp.spark.core.model._
+
 import de.kp.spark.cluster.model._
 import de.kp.spark.cluster.spec.Sequences
 
 class SequenceModel(@transient sc:SparkContext) extends Serializable {
   
-  def buildElastic(uid:String,rawset:RDD[Map[String,String]]):RDD[NumberedSequence] = {
+  def buildElastic(req:ServiceRequest,rawset:RDD[Map[String,String]]):RDD[NumberedSequence] = {
 
-    val spec = sc.broadcast(Sequences.get(uid))
+    val spec = sc.broadcast(Sequences.get(req))
     val dataset = rawset.map(data => {
       
       val site = data(spec.value("site")._1)
@@ -87,7 +89,7 @@ class SequenceModel(@transient sc:SparkContext) extends Serializable {
     
   }
   
-  def buildFile(uid:String,rawset:RDD[String]):RDD[NumberedSequence] = {
+  def buildFile(req:ServiceRequest,rawset:RDD[String]):RDD[NumberedSequence] = {
     
     rawset.map(valu => {
       
@@ -100,9 +102,9 @@ class SequenceModel(@transient sc:SparkContext) extends Serializable {
      
   }
   
-  def buildJDBC(uid:String,rawset:RDD[Map[String,Any]]):RDD[NumberedSequence] = {
+  def buildJDBC(req:ServiceRequest,rawset:RDD[Map[String,Any]]):RDD[NumberedSequence] = {
 
-    val spec = sc.broadcast(Sequences.get(uid))
+    val spec = sc.broadcast(Sequences.get(req))
     val dataset = rawset.map(data => {
       
       val site = data(spec.value("site")._1).asInstanceOf[String]

@@ -18,8 +18,8 @@ package de.kp.spark.cluster.actor
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+import de.kp.spark.core.model._
 import de.kp.spark.cluster.model._
-import de.kp.spark.cluster.redis.RedisCache
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -72,7 +72,7 @@ class ClusterRegistrar extends BaseActor {
         
             }
  
-            RedisCache.addFields(req, new Fields(fields.toList))
+            cache.addFields(req, new Fields(fields.toList))
         
             new ServiceResponse("similarity","register",Map("uid"-> uid),ClusterStatus.SUCCESS)
         
@@ -99,7 +99,7 @@ class ClusterRegistrar extends BaseActor {
 
             fields += new Field("item","integer",req.data("item"))
             
-            RedisCache.addFields(req, new Fields(fields.toList))
+            cache.addFields(req, new Fields(fields.toList))
         
             new ServiceResponse("similarity","register",Map("uid"-> uid),ClusterStatus.SUCCESS)
         

@@ -18,6 +18,8 @@ package de.kp.spark.cluster.actor
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+import de.kp.spark.core.model._
+
 import de.kp.spark.cluster.model._
 import de.kp.spark.cluster.sink.RedisSink
 

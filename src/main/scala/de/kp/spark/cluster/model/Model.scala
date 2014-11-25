@@ -23,35 +23,7 @@ import org.json4s._
 import org.json4s.native.Serialization
 import org.json4s.native.Serialization.{read,write}
 
-case class Listener(
-  timeout:Int, url:String
-)
-/**
- * ServiceRequest & ServiceResponse specify the content 
- * sent to and received from the decision service
- */
-case class ServiceRequest(
-  service:String,task:String,data:Map[String,String]
-)
-case class ServiceResponse(
-  service:String,task:String,data:Map[String,String],status:String
-)
-/*
- * The Field and Fields classes are used to specify the fields with
- * respect to the data source provided
- */
-case class Field(
-  name:String,datatype:String,value:String
-)
-case class Fields(items:List[Field])
-
-/*
- * Service requests are mapped onto job descriptions and are stored
- * in a Redis instance
- */
-case class JobDesc(
-  service:String,task:String,status:String
-)
+import de.kp.spark.core.model._
 
 case class LabeledPoint(
   label:String,features:Array[Double]
@@ -71,23 +43,10 @@ case class ClusteredSequence(
 
 case class ClusteredSequences(items:List[ClusteredSequence])
 
-object Serializer {
-    
-  implicit val formats = Serialization.formats(NoTypeHints)
-  
-  def serializeFields(fields:Fields):String = write(fields)  
-  def deserializeFields(fields:String):Fields = read[Fields](fields)
+object Serializer extends BaseSerializer {
 
   def serializeClusteredPoints(points:ClusteredPoints):String = write(points)
   def deserializeClusteredPoints(points:String):ClusteredPoints = read[ClusteredPoints](points)
-
-  def serializeJob(job:JobDesc):String = write(job)
-  def deserializeJob(job:String):JobDesc = read[JobDesc](job)
-
-  def serializeResponse(response:ServiceResponse):String = write(response)
-
-  def deserializeRequest(request:String):ServiceRequest = read[ServiceRequest](request)
-  def serializeRequest(request:ServiceRequest):String = write(request)
 
   def serializeClusteredSequences(sequences:ClusteredSequences):String = write(sequences)
   def deserializeClusteredSequences(sequences:String):ClusteredSequences = read[ClusteredSequences](sequences)
@@ -118,37 +77,17 @@ object Sources {
   
 }
 
-object Messages {
-
-  def ALGORITHM_IS_UNKNOWN(uid:String,algorithm:String):String = String.format("""Algorithm '%s' is unknown for uid '%s'.""", algorithm, uid)
+object Messages extends BaseMessages {
  
   def DATA_TO_TRACK_RECEIVED(uid:String):String = String.format("""Data to track received for uid '%s'.""", uid)
-
-  def GENERAL_ERROR(uid:String):String = String.format("""A general error appeared for uid '%s'.""", uid)
 
   def MODEL_BUILDING_STARTED(uid:String) = String.format("""Model building started for uid '%s'.""", uid)
   
   def MISSING_PARAMETERS(uid:String):String = String.format("""Parameters are missing for uid '%s'.""", uid)
 
   def MODEL_DOES_NOT_EXIST(uid:String):String = String.format("""The model for uid '%s' does not exist.""", uid)
- 
-  def NO_ALGORITHM_PROVIDED(uid:String):String = String.format("""No algorithm provided for uid '%s'.""", uid)
-
-  def NO_PARAMETERS_PROVIDED(uid:String):String = String.format("""No parameters provided for uid '%s'.""", uid)
-
-  def NO_SOURCE_PROVIDED(uid:String):String = String.format("""No source provided for uid '%s'.""", uid)
-
-  def REQUEST_IS_UNKNOWN():String = String.format("""Unknown request.""")
 
   def SEARCH_INDEX_CREATED(uid:String):String = String.format("""Search index created for uid '%s'.""", uid)
-
-  def TASK_ALREADY_STARTED(uid:String):String = String.format("""The task with uid '%s' is already started.""", uid)
-
-  def TASK_DOES_NOT_EXIST(uid:String):String = String.format("""The task with uid '%s' does not exist.""", uid)
-
-  def TASK_IS_UNKNOWN(uid:String,task:String):String = String.format("""The task '%s' is unknown for uid '%s'.""", task, uid)
-
-  def SOURCE_IS_UNKNOWN(uid:String,source:String):String = String.format("""Source '%s' is unknown for uid '%s'.""", source, uid)
   
 }
 

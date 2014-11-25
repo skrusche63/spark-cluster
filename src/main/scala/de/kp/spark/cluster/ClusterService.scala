@@ -21,6 +21,7 @@ package de.kp.spark.cluster
 import akka.actor.{ActorSystem,Props}
 import com.typesafe.config.ConfigFactory
 
+import de.kp.spark.core.SparkService
 import de.kp.spark.cluster.actor.ClusterMaster
 
 object ClusterService {

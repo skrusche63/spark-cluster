@@ -21,6 +21,9 @@ package de.kp.spark.cluster.source
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
+import de.kp.spark.core.model._
+import de.kp.spark.core.source.{ElasticSource,FileSource,JdbcSource}
+
 import de.kp.spark.cluster.Configuration
 import de.kp.spark.cluster.model._
 
@@ -35,11 +38,9 @@ class SequenceSource (@transient sc:SparkContext) {
 
   private val model = new SequenceModel(sc)
   
-  def get(data:Map[String,String]):RDD[NumberedSequence] = {
+  def get(req:ServiceRequest):RDD[NumberedSequence] = {
     
-    val uid = data("uid")
-    
-    val source = data("source")
+    val source = req.data("source")
     source match {
       
       /* 
@@ -49,8 +50,8 @@ class SequenceSource (@transient sc:SparkContext) {
        */    
       case Sources.ELASTIC => {
         
-        val rawset = new ElasticSource(sc).connect(data)
-        model.buildElastic(uid,rawset)
+        val rawset = new ElasticSource(sc).connect(req.data)
+        model.buildElastic(req,rawset)
         
       }
       /* 
@@ -62,8 +63,8 @@ class SequenceSource (@transient sc:SparkContext) {
         
         val path = Configuration.file()._2
 
-        val rawset = new FileSource(sc).connect(data,path)
-        model.buildFile(uid,rawset)
+        val rawset = new FileSource(sc).connect(req.data,path)
+        model.buildFile(req,rawset)
         
       }
       /*
@@ -73,10 +74,10 @@ class SequenceSource (@transient sc:SparkContext) {
        */
       case Sources.JDBC => {
    
-        val fields = Sequences.get(uid).map(kv => kv._2._1).toList  
+        val fields = Sequences.get(req).map(kv => kv._2._1).toList  
                 
-        val rawset = new JdbcSource(sc).connect(data,fields)
-        model.buildJDBC(uid,rawset)
+        val rawset = new JdbcSource(sc).connect(req.data,fields)
+        model.buildJDBC(req,rawset)
         
       }
       

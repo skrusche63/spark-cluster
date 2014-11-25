@@ -20,7 +20,8 @@ package de.kp.spark.cluster.rest
 
 import akka.actor.ActorSystem
 
-import de.kp.spark.cluster.{Configuration,SparkService}
+import de.kp.spark.core.SparkService
+import de.kp.spark.cluster.{Configuration}
 
 object RestServer extends SparkService {
   
