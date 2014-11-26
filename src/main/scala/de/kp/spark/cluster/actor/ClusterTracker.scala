@@ -21,9 +21,10 @@ package de.kp.spark.cluster.actor
 import java.util.Date
 
 import de.kp.spark.core.model._
+import de.kp.spark.core.io.ElasticWriter
 
 import de.kp.spark.cluster.model._
-import de.kp.spark.cluster.io.{ElasticBuilderFactory => EBF,ElasticWriter}
+import de.kp.spark.cluster.io.{ElasticBuilderFactory => EBF}
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
