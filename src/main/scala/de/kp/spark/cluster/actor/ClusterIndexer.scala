@@ -19,9 +19,10 @@ package de.kp.spark.cluster.actor
  */
 
 import de.kp.spark.core.model._
+import de.kp.spark.core.io.ElasticIndexer
 
 import de.kp.spark.cluster.model._
-import de.kp.spark.cluster.io.{ElasticBuilderFactory => EBF,ElasticIndexer}
+import de.kp.spark.cluster.io.{ElasticBuilderFactory => EBF}
 
 class ClusterIndexer extends BaseActor {
   

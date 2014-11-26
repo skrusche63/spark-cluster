@@ -86,8 +86,6 @@ object Messages extends BaseMessages {
   def MISSING_PARAMETERS(uid:String):String = String.format("""Parameters are missing for uid '%s'.""", uid)
 
   def MODEL_DOES_NOT_EXIST(uid:String):String = String.format("""The model for uid '%s' does not exist.""", uid)
-
-  def SEARCH_INDEX_CREATED(uid:String):String = String.format("""Search index created for uid '%s'.""", uid)
   
 }
 
