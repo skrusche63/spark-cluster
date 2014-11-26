@@ -91,7 +91,7 @@ object Messages extends BaseMessages {
   
 }
 
-object ClusterStatus {
+object ClusterStatus extends BaseStatus {
   
   val DATASET:String = "dataset"
     
@@ -100,8 +100,5 @@ object ClusterStatus {
     
   val FINISHED:String = "finished"
   val RUNNING:String  = "running"
-  
-  val FAILURE:String = "failure"
-  val SUCCESS:String = "success"
     
 }

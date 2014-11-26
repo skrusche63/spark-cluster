@@ -37,6 +37,9 @@ import scala.concurrent.Future
 class ClusterMaster(@transient val sc:SparkContext) extends BaseActor {
   
   val (duration,retries,time) = Configuration.actor   
+      
+  implicit val ec = context.dispatcher
+  implicit val timeout:Timeout = DurationInt(time).second
 
   override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries=retries,withinTimeRange = DurationInt(time).minutes) {
     case _ : Exception => SupervisorStrategy.Restart
@@ -45,38 +48,31 @@ class ClusterMaster(@transient val sc:SparkContext) extends BaseActor {
   def receive = {
     
     case req:String => {
-      
-      implicit val ec = context.dispatcher
-      implicit val timeout:Timeout = DurationInt(time).second
 	  	    
 	  val origin = sender
 
-	  val deser = Serializer.deserializeRequest(req)
-	  val response = deser.task.split(":")(0) match {
-
-	    case "get" => ask(actor("questor"),deser).mapTo[ServiceResponse]
-	    case "index" => ask(actor("indexer"),deser).mapTo[ServiceResponse]
- 
-	    case "train"  => ask(actor("builder"),deser).mapTo[ServiceResponse]
-        case "register"  => ask(actor("registrar"),deser).mapTo[ServiceResponse]
-
-        case "status" => ask(actor("builder"),deser).mapTo[ServiceResponse]
-        case "track" => ask(actor("tracker"),deser).mapTo[ServiceResponse]
-       
-        case _ => {
-
-          Future {     
-            failure(deser,Messages.TASK_IS_UNKNOWN(deser.data("uid"),deser.task))
-          } 
-        
-        }
-      
-      }
+	  val deser = Serializer.deserializeRequest(req)	  
+	  val response = execute(deser)
+	  
       response.onSuccess {
         case result => origin ! Serializer.serializeResponse(result)
       }
       response.onFailure {
         case result => origin ! failure(deser,Messages.GENERAL_ERROR(deser.data("uid")))	      
+	  }
+      
+    }
+    
+    case req:ServiceRequest => {
+	  	    
+	  val origin = sender
+
+	  val response = execute(req)
+      response.onSuccess {
+        case result => origin ! Serializer.serializeResponse(result)
+      }
+      response.onFailure {
+        case result => origin ! failure(req,Messages.GENERAL_ERROR(req.data("uid")))	      
 	  }
       
     }
@@ -92,6 +88,27 @@ class ClusterMaster(@transient val sc:SparkContext) extends BaseActor {
     
   }
 
+  private def execute(req:ServiceRequest):Future[ServiceResponse] = {
+
+    req.task.split(":")(0) match {
+
+	  case "get" => ask(actor("questor"),req).mapTo[ServiceResponse]
+	  case "index" => ask(actor("indexer"),req).mapTo[ServiceResponse]
+ 
+	  case "train"  => ask(actor("builder"),req).mapTo[ServiceResponse]
+      case "register"  => ask(actor("registrar"),req).mapTo[ServiceResponse]
+
+      case "status" => ask(actor("builder"),req).mapTo[ServiceResponse]
+      case "track" => ask(actor("tracker"),req).mapTo[ServiceResponse]
+       
+      case _ => Future {     
+        failure(req,Messages.TASK_IS_UNKNOWN(req.data("uid"),req.task))
+      }
+      
+    }
+    
+  }
+  
   private def actor(worker:String):ActorRef = {
     
     worker match {
