@@ -23,13 +23,16 @@ import java.util.Date
 import de.kp.spark.core.model._
 import de.kp.spark.core.redis.RedisClient
 
+import de.kp.spark.cluster.Configuration
 import de.kp.spark.cluster.model._
 
 import scala.collection.JavaConversions._
 
 class RedisSink {
 
-  val client  = RedisClient()
+  val (host,port) = Configuration.redis
+  val client = RedisClient(host,port.toInt)
+
   val service = "cluster"
 
   def addMatrix(req:ServiceRequest,matrix:String) {
