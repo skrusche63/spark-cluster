@@ -1,4 +1,4 @@
-package de.kp.spark.cluster.rest
+package de.kp.spark.cluster.api
 /* Copyright (c) 2014 Dr. Krusche & Partner PartG
 * 
 * This file is part of the Spark-Cluster project
@@ -53,7 +53,7 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkCon
   override def actorRefFactory:ActorSystem = system
 
   val (duration,retries,time) = Configuration.actor   
-  val master = system.actorOf(Props(new ClusterMaster(sc)), name="ClusterMaster")
+  val master = system.actorOf(Props(new ClusterMaster(sc)), name="similarity-master")
 
   def start() {
     RestService.start(routes,system,host,port)

@@ -1,4 +1,4 @@
-package de.kp.spark.cluster.rest
+package de.kp.spark.cluster.api
 /* Copyright (c) 2014 Dr. Krusche & Partner PartG
 * 
 * This file is part of the Spark-Cluster project

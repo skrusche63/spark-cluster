@@ -98,7 +98,7 @@ class ClusterMaster(@transient val sc:SparkContext) extends BaseActor {
 	  case "train"  => ask(actor("builder"),req).mapTo[ServiceResponse]
       case "register"  => ask(actor("registrar"),req).mapTo[ServiceResponse]
 
-      case "status" => ask(actor("builder"),req).mapTo[ServiceResponse]
+      case "status" => ask(actor("monitor"),req).mapTo[ServiceResponse]
       case "track" => ask(actor("tracker"),req).mapTo[ServiceResponse]
        
       case _ => Future {     
@@ -116,7 +116,9 @@ class ClusterMaster(@transient val sc:SparkContext) extends BaseActor {
       case "builder" => context.actorOf(Props(new ClusterBuilder(sc)))
   
       case "indexer" => context.actorOf(Props(new ClusterIndexer()))
-        
+   
+      case "monitor" => context.actorOf(Props(new ClusterMonitor()))
+       
       case "questor" => context.actorOf(Props(new ClusterQuestor()))
         
       case "registrar" => context.actorOf(Props(new ClusterRegistrar()))

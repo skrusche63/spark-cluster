@@ -76,20 +76,6 @@ class ClusterBuilder(@transient val sc:SparkContext) extends BaseActor {
           }
          
         }
-       
-        case "status" => {
-          
-          val resp = if (cache.statusExists(req) == false) {           
-            failure(req,Messages.TASK_DOES_NOT_EXIST(uid))           
-          } else {            
-            status(req)
-            
-          }
-           
-          origin ! Serializer.serializeResponse(resp)
-          context.stop(self)
-          
-        }
         
         case _ => {
           
@@ -180,15 +166,6 @@ class ClusterBuilder(@transient val sc:SparkContext) extends BaseActor {
     
     ask(actor(req), req)
     
-  }
-
-  private def status(req:ServiceRequest):ServiceResponse = {
-    
-    val uid = req.data("uid")
-    val data = Map("uid" -> uid)
-                
-    new ServiceResponse(req.service,req.task,data,cache.status(req))	
-
   }
 
 }
