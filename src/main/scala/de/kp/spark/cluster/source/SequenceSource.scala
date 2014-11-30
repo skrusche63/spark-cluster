@@ -36,6 +36,7 @@ import de.kp.spark.cluster.spec.Sequences
  */
 class SequenceSource (@transient sc:SparkContext) {
 
+  private val config = Configuration
   private val model = new SequenceModel(sc)
   
   def get(req:ServiceRequest):RDD[NumberedSequence] = {
@@ -50,7 +51,7 @@ class SequenceSource (@transient sc:SparkContext) {
        */    
       case Sources.ELASTIC => {
         
-        val rawset = new ElasticSource(sc).connect(req.data)
+        val rawset = new ElasticSource(sc).connect(config,req)
         model.buildElastic(req,rawset)
         
       }
@@ -60,10 +61,8 @@ class SequenceSource (@transient sc:SparkContext) {
        * the service configuration  
        */    
       case Sources.FILE => {
-        
-        val path = Configuration.file()._2
 
-        val rawset = new FileSource(sc).connect(req.data,path)
+        val rawset = new FileSource(sc).connect(config.file(1),req)
         model.buildFile(req,rawset)
         
       }
@@ -76,7 +75,7 @@ class SequenceSource (@transient sc:SparkContext) {
    
         val fields = Sequences.get(req).map(kv => kv._2._1).toList  
                 
-        val rawset = new JdbcSource(sc).connect(req.data,fields)
+        val rawset = new JdbcSource(sc).connect(config,req,fields)
         model.buildJDBC(req,rawset)
         
       }
