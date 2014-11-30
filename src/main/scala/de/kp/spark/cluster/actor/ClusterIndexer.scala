@@ -54,7 +54,7 @@ class ClusterIndexer extends BaseActor {
             val response = new ServiceResponse(req.service,req.task,data,ClusterStatus.SUCCESS)	
       
             val origin = sender
-            origin ! Serializer.serializeResponse(response)
+            origin ! response
       
           } catch {
         
@@ -66,7 +66,7 @@ class ClusterIndexer extends BaseActor {
               val response = new ServiceResponse(req.service,req.task,data,ClusterStatus.FAILURE)	
       
               val origin = sender
-              origin ! Serializer.serializeResponse(response)
+              origin ! response
           
             }
       
@@ -91,7 +91,7 @@ class ClusterIndexer extends BaseActor {
             val response = new ServiceResponse(req.service,req.task,data,ClusterStatus.SUCCESS)	
       
             val origin = sender
-            origin ! Serializer.serializeResponse(response)
+            origin ! response
       
           } catch {
         
@@ -103,7 +103,7 @@ class ClusterIndexer extends BaseActor {
               val response = new ServiceResponse(req.service,req.task,data,ClusterStatus.FAILURE)	
       
               val origin = sender
-              origin ! Serializer.serializeResponse(response)
+              origin ! response
           
             }
       
@@ -118,7 +118,7 @@ class ClusterIndexer extends BaseActor {
           
           val msg = Messages.TASK_IS_UNKNOWN(uid,req.task)
           
-          origin ! Serializer.serializeResponse(failure(req,msg))
+          origin ! failure(req,msg)
           context.stop(self)
           
         }

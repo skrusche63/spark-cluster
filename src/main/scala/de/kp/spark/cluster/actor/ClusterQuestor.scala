@@ -60,7 +60,7 @@ class ClusterQuestor extends BaseActor {
           
           }
              
-          origin ! Serializer.serializeResponse(resp)
+          origin ! resp
           context.stop(self)
           
         }
@@ -88,7 +88,7 @@ class ClusterQuestor extends BaseActor {
           
           }
              
-          origin ! Serializer.serializeResponse(resp)
+          origin ! resp
           context.stop(self)
           
         }
@@ -97,7 +97,7 @@ class ClusterQuestor extends BaseActor {
           
           val msg = Messages.TASK_IS_UNKNOWN(uid,req.task)
           
-          origin ! Serializer.serializeResponse(failure(req,msg))
+          origin ! failure(req,msg)
           context.stop(self)
           
         }

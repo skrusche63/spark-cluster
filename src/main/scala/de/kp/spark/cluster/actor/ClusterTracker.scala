@@ -41,7 +41,7 @@ class ClusterTracker extends BaseActor {
       val data = Map("uid" -> uid, "message" -> Messages.DATA_TO_TRACK_RECEIVED(uid))
       val response = new ServiceResponse(req.service,req.task,data,ClusterStatus.SUCCESS)	
       
-      origin ! Serializer.serializeResponse(response)
+      origin ! response
 
       req.task match {
 
@@ -63,7 +63,7 @@ class ClusterTracker extends BaseActor {
           
           val msg = Messages.TASK_IS_UNKNOWN(uid,req.task)
           
-          origin ! Serializer.serializeResponse(failure(req,msg))
+          origin ! failure(req,msg)
           context.stop(self)
           
         }

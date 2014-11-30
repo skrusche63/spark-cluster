@@ -69,7 +69,7 @@ class ClusterMaster(@transient val sc:SparkContext) extends BaseActor {
 
 	  val response = execute(req)
       response.onSuccess {
-        case result => origin ! Serializer.serializeResponse(result)
+        case result => origin ! result
       }
       response.onFailure {
         case result => origin ! failure(req,Messages.GENERAL_ERROR(req.data("uid")))	      
@@ -79,10 +79,8 @@ class ClusterMaster(@transient val sc:SparkContext) extends BaseActor {
   
     case _ => {
 
-      val origin = sender               
       val msg = Messages.REQUEST_IS_UNKNOWN()          
-          
-      origin ! Serializer.serializeResponse(failure(null,msg))
+      log.error(msg)
 
     }
     
