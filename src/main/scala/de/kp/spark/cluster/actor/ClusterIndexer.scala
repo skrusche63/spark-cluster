@@ -25,7 +25,7 @@ import de.kp.spark.cluster.Configuration
 
 class ClusterIndexer extends BaseIndexer(Configuration) {
  
-  override def fieldspec(req:ServiceRequest):(List[String],List[String]) = {
+  override def getSpec(req:ServiceRequest):(List[String],List[String]) = {
     
     req.task.split(":")(1) match {
       
@@ -42,8 +42,21 @@ class ClusterIndexer extends BaseIndexer(Configuration) {
         (List.empty[String],List.empty[String])
         
       }
+      
+      case _ => throw new Exception("Unknown topic.")
     }
     
   }  
  
+  override def getTopic(req:ServiceRequest):String = {
+    
+    req.task.split(":")(1) match {
+      
+      case "feature" => "feature"
+      case "sequence" => "item"
+      
+      case _ => throw new Exception("Unknown topic.")
+    }
+    
+  }
 }
