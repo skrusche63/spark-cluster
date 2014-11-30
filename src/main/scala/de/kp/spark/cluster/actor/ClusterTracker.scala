@@ -20,11 +20,14 @@ package de.kp.spark.cluster.actor
 
 import java.util.Date
 
+import de.kp.spark.core.Names
+
 import de.kp.spark.core.model._
+import de.kp.spark.core.elastic.{ElasticBuilderFactory => EBF}
+
 import de.kp.spark.core.io.ElasticWriter
 
 import de.kp.spark.cluster.model._
-import de.kp.spark.cluster.io.{ElasticBuilderFactory => EBF}
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
@@ -121,8 +124,8 @@ class ClusterTracker extends BaseActor {
     val now = new Date()
     val source = HashMap.empty[String,String]
     
-    source += EBF.SITE_FIELD -> params(EBF.SITE_FIELD)
-    source += EBF.TIMESTAMP_FIELD -> now.getTime().toString    
+    source += Names.SITE_FIELD -> params(Names.SITE_FIELD)
+    source += Names.TIMESTAMP_FIELD -> now.getTime().toString    
  
     /* 
      * Restrict parameters to those that are relevant to feature description;
@@ -147,13 +150,13 @@ class ClusterTracker extends BaseActor {
     
     val source = HashMap.empty[String,String]
     
-    source += EBF.SITE_FIELD -> params(EBF.SITE_FIELD)
-    source += EBF.USER_FIELD -> params(EBF.USER_FIELD)
+    source += Names.SITE_FIELD -> params(Names.SITE_FIELD)
+    source += Names.USER_FIELD -> params(Names.USER_FIELD)
       
-    source += EBF.TIMESTAMP_FIELD -> params(EBF.TIMESTAMP_FIELD)
+    source += Names.TIMESTAMP_FIELD -> params(Names.TIMESTAMP_FIELD)
  
-    source += EBF.GROUP_FIELD -> params(EBF.GROUP_FIELD)
-    source += EBF.ITEM_FIELD -> params(EBF.ITEM_FIELD)
+    source += Names.GROUP_FIELD -> params(Names.GROUP_FIELD)
+    source += Names.ITEM_FIELD -> params(Names.ITEM_FIELD)
 
     source
     
