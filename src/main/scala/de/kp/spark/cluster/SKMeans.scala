@@ -23,6 +23,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark._
 import org.apache.spark.SparkContext._
 
+import de.kp.spark.core.math.SMatrix
 import de.kp.spark.cluster.model._
 
 import scala.collection.mutable.ArrayBuffer
