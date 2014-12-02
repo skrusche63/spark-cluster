@@ -72,7 +72,7 @@ class ClusterRegistrar extends BaseActor {
         
             }
  
-            cache.addFields(req, new Fields(fields.toList))
+            cache.addFields(req, fields.toList)
         
             new ServiceResponse("similarity","register",Map("uid"-> uid),ClusterStatus.SUCCESS)
         
@@ -99,7 +99,7 @@ class ClusterRegistrar extends BaseActor {
 
             fields += new Field("item","integer",req.data("item"))
             
-            cache.addFields(req, new Fields(fields.toList))
+            cache.addFields(req, fields.toList)
         
             new ServiceResponse("similarity","register",Map("uid"-> uid),ClusterStatus.SUCCESS)
         
