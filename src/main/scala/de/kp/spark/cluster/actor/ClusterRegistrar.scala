@@ -18,7 +18,11 @@ package de.kp.spark.cluster.actor
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
+import de.kp.spark.core.Names
+
 import de.kp.spark.core.model._
+import de.kp.spark.core.spec.FieldBuilder
+
 import de.kp.spark.cluster.model._
 
 import scala.collection.mutable.ArrayBuffer
@@ -32,95 +36,77 @@ class ClusterRegistrar extends BaseActor {
     case req:ServiceRequest => {
       
       val origin = sender
-      val uid = req.data("uid")
+      val uid = req.data(Names.REQ_UID)
       
-      req.task match {
-        
-        case "register:feature" => {
-      
-          val response = try {
-        
-            /* Unpack fields from request and register in Redis instance */
-            val fields = ArrayBuffer.empty[Field]
+      val response = try {
 
-            /*
-             * ********************************************
-             * 
-             *  "uid" -> 123
-             *  "names" -> "target,feature,feature,feature"
-             *  "types" -> "string,double,double,double"
-             *
-             * ********************************************
-             * 
-             * It is important to have the names specified in the order
-             * they are used (later) to retrieve the respective data
-             */
-            val names = req.data("names").split(",")
-            val types = req.data("types").split(",")
+          req.task.split(":")(1) match {
         
-            val zip = names.zip(types)
+            case "feature" => {
         
-            val target = zip.head
-            if (target._2 != "string") throw new Exception("Target variable must be a String")
+              /* Unpack fields from request and register in Redis instance */
+              val fields = ArrayBuffer.empty[Field]
+
+              /*
+               * ********************************************
+               * 
+               *  "uid" -> 123
+               *  "names" -> "target,feature,feature,feature"
+               *  "types" -> "string,double,double,double"
+               *
+               * ********************************************
+               * 
+               * It is important to have the names specified in the order
+               * they are used (later) to retrieve the respective data
+               */
+              val names = req.data("names").split(",")
+              val types = req.data("types").split(",")
         
-            fields += new Field(target._1,target._2,"")
+              val zip = names.zip(types)
         
-            for (feature <- zip.tail) {
+              val target = zip.head
+              if (target._2 != "string") throw new Exception("Target variable must be a String")
+        
+              fields += new Field(target._1,target._2,"")
+        
+              for (feature <- zip.tail) {
           
-              if (feature._2 != "double") throw new Exception("A feature must be a Double.")          
-              fields += new Field(feature._1,"double","")
+                if (feature._2 != "double") throw new Exception("A feature must be a Double.")          
+                fields += new Field(feature._1,"double","")
         
-            }
+              }
  
-            cache.addFields(req, fields.toList)
+              cache.addFields(req, fields.toList)
         
-            new ServiceResponse("similarity","register",Map("uid"-> uid),ClusterStatus.SUCCESS)
-        
-          } catch {
-            case throwable:Throwable => failure(req,throwable.getMessage)
-          }
-      
-          origin ! response
+              new ServiceResponse(req.service,req.task,Map(Names.REQ_UID-> uid),ClusterStatus.SUCCESS)
           
-        } 
+            } 
         
-        case "register:sequence" => {
-      
-          val response = try {
+            case "sequence" => {
         
-            /* Unpack fields from request and register in Redis instance */
-            val fields = ArrayBuffer.empty[Field]
-
-            fields += new Field("site","string",req.data("site"))
-            fields += new Field("timestamp","long",req.data("timestamp"))
-
-            fields += new Field("user","string",req.data("user"))
-            fields += new Field("group","string",req.data("group"))
-
-            fields += new Field("item","integer",req.data("item"))
+              val fields = new FieldBuilder().build(req,"item")
+              cache.addFields(req, fields)
+        
+              new ServiceResponse(req.service,req.task,Map(Names.REQ_UID-> uid),ClusterStatus.SUCCESS)
             
-            cache.addFields(req, fields.toList)
+            }
         
-            new ServiceResponse("similarity","register",Map("uid"-> uid),ClusterStatus.SUCCESS)
-        
-          } catch {
-            case throwable:Throwable => failure(req,throwable.getMessage)
+            case _ => {
+          
+              val msg = Messages.TASK_IS_UNKNOWN(uid,req.task)
+              failure(req,msg)
+          
+            }
+          
           }
-      
-          origin ! response
-          
-        }
         
-        case _ => {
-          
-          val msg = Messages.TASK_IS_UNKNOWN(uid,req.task)
-          
-          origin ! failure(req,msg)
-          context.stop(self)
-          
-        }
-        
+      } catch {
+        case throwable:Throwable => failure(req,throwable.getMessage)
       }
+      
+      origin ! response
+      context.stop(self)
+        
     }
   
   }
