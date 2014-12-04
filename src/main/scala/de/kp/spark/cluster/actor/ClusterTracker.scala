@@ -18,110 +18,19 @@ package de.kp.spark.cluster.actor
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-import java.util.Date
-
 import de.kp.spark.core.Names
+import de.kp.spark.core.actor.BaseTracker
 
-import de.kp.spark.core.model._
-import de.kp.spark.core.elastic.{ElasticBuilderFactory => EBF}
-
-import de.kp.spark.core.io.ElasticWriter
-
-import de.kp.spark.cluster.model._
+import de.kp.spark.cluster.Configuration
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable.HashMap
 
-class ClusterTracker extends BaseActor {
+class ClusterTracker extends BaseTracker(Configuration) {
   
-  def receive = {
+  override def prepareFeature(params:Map[String,String]):java.util.Map[String,Object] = {
     
-    case req:ServiceRequest => {
-     
-      val uid = req.data("uid")
-      val origin = sender    
-          
-      val data = Map("uid" -> uid, "message" -> Messages.DATA_TO_TRACK_RECEIVED(uid))
-      val response = new ServiceResponse(req.service,req.task,data,ClusterStatus.SUCCESS)	
-      
-      origin ! response
-
-      req.task match {
-
-        case "track:feature" => {
-          
-          createLabeledPoint(req)
-          context.stop(self)
-          
-        }
-        
-        case "track:sequence" => {
-          
-          createSequence(req)
-          context.stop(self)
-          
-        }
-        
-        case _ => {
-          
-          val msg = Messages.TASK_IS_UNKNOWN(uid,req.task)
-          
-          origin ! failure(req,msg)
-          context.stop(self)
-          
-        }
-        
-      }
-
-    }
-    
-  }
-  
-  private def createLabeledPoint(req:ServiceRequest) {
-          
-    try {
-
-      val index   = req.data("index")
-      val mapping = req.data("type")
-
-      val writer = new ElasticWriter()
-    
-      val readyToWrite = writer.open(index,mapping)
-      if (readyToWrite == false) {
-      
-        writer.close()
-      
-        val msg = String.format("""Opening index '%s' and mapping '%s' for write failed.""",index,mapping)
-        throw new Exception(msg)
-      
-      } else {
-      
-        /* Prepare data */
-        val source = prepareLabeledPoint(req.data)
-        /*
-         * Writing this source to the respective index throws an
-         * exception in case of an error; note, that the writer is
-         * automatically closed 
-         */
-        writer.write(index, mapping, source)
-        
-      }
-      
-    } catch {
-        
-      case e:Exception => {
-        log.error(e, e.getMessage())
-      }
-      
-    } finally {
-
-    }
-    
-  }
-  
-  private def prepareLabeledPoint(params:Map[String,String]):java.util.Map[String,Object] = {
-    
-    val now = new Date()
+    val now = new java.util.Date()
     val source = HashMap.empty[String,String]
     
     source += Names.SITE_FIELD -> params(Names.SITE_FIELD)
@@ -146,7 +55,7 @@ class ClusterTracker extends BaseActor {
     
   }
 
-  private def prepareSequence(params:Map[String,String]):java.util.Map[String,Object] = {
+  override def prepareSequence(params:Map[String,String]):java.util.Map[String,Object] = {
     
     val source = HashMap.empty[String,String]
     
@@ -159,48 +68,6 @@ class ClusterTracker extends BaseActor {
     source += Names.ITEM_FIELD -> params(Names.ITEM_FIELD)
 
     source
-    
-  }
-
-  private def createSequence(req:ServiceRequest) {
-          
-    try {
-
-      val index   = req.data("index")
-      val mapping = req.data("type")
-    
-      val writer = new ElasticWriter()
-    
-      val readyToWrite = writer.open(index,mapping)
-      if (readyToWrite == false) {
-      
-        writer.close()
-      
-        val msg = String.format("""Opening index '%s' and mapping '%s' for write failed.""",index,mapping)
-        throw new Exception(msg)
-      
-      } else {
-      
-        /* Prepare data */
-        val source = prepareSequence(req.data)
-        /*
-         * Writing this source to the respective index throws an
-         * exception in case of an error; note, that the writer is
-         * automatically closed 
-         */
-        writer.write(index, mapping, source)
-        
-      }
-      
-    } catch {
-        
-      case e:Exception => {
-        log.error(e, e.getMessage())
-      }
-      
-    } finally {
-
-    }
     
   }
  
