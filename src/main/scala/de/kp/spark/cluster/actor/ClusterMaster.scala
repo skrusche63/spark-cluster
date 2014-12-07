@@ -26,6 +26,7 @@ import akka.util.Timeout
 
 import akka.actor.{OneForOneStrategy, SupervisorStrategy}
 
+import de.kp.spark.core.actor._
 import de.kp.spark.core.model._
 
 import de.kp.spark.cluster.Configuration
@@ -87,24 +88,18 @@ class ClusterMaster(@transient val sc:SparkContext) extends BaseActor {
   }
 
   private def execute(req:ServiceRequest):Future[ServiceResponse] = {
-
-    req.task.split(":")(0) match {
-
-      case "fields" => ask(actor("fields"),req).mapTo[ServiceResponse]
-      case "status" => ask(actor("status"),req).mapTo[ServiceResponse]
-
-	  case "get" => ask(actor("questor"),req).mapTo[ServiceResponse]
-	  case "index" => ask(actor("indexer"),req).mapTo[ServiceResponse]
- 
-	  case "train"  => ask(actor("builder"),req).mapTo[ServiceResponse]
-      case "register"  => ask(actor("registrar"),req).mapTo[ServiceResponse]
-
-      case "track" => ask(actor("tracker"),req).mapTo[ServiceResponse]
-       
-      case _ => Future {     
-        failure(req,Messages.TASK_IS_UNKNOWN(req.data("uid"),req.task))
-      }
+	
+    try {
       
+      val Array(task,topic) = req.task.split(":")
+      ask(actor(task),req).mapTo[ServiceResponse]
+    
+    } catch {
+      
+      case e:Exception => {
+        Future {failure(req,e.getMessage)}         
+      }
+    
     }
     
   }
@@ -112,21 +107,30 @@ class ClusterMaster(@transient val sc:SparkContext) extends BaseActor {
   private def actor(worker:String):ActorRef = {
     
     worker match {
-  
-      case "builder" => context.actorOf(Props(new ClusterBuilder(sc)))
-      
-      case "fields" => context.actorOf(Props(new FieldMonitor()))
-  
-      case "indexer" => context.actorOf(Props(new ClusterIndexer()))
-   
-      case "status" => context.actorOf(Props(new StatusMonitor()))
-       
-      case "questor" => context.actorOf(Props(new ClusterQuestor()))
-        
-      case "registrar" => context.actorOf(Props(new ClusterRegistrar()))
-        
-      case "tracker" => context.actorOf(Props(new ClusterTracker()))
-      
+     /*
+       * Metadata management is part of the core functionality; field or metadata
+       * specifications can be registered in, and retrieved from a Redis database.
+       */
+      case "fields"   => context.actorOf(Props(new FieldQuestor(Configuration)))
+      case "register" => context.actorOf(Props(new ClusterRegistrar()))        
+      /*
+       * Index management is part of the core functionality; an Elasticsearch 
+       * index can be created and appropriate (tracked) items can be saved.
+       */  
+      case "index" => context.actorOf(Props(new BaseIndexer(Configuration)))
+      case "track" => context.actorOf(Props(new BaseTracker(Configuration)))
+      /*
+       * Request the actual status of an association rule mining 
+       * task; note, that get requests should only be invoked after 
+       * having retrieved a FINISHED status.
+       * 
+       * Status management is part of the core functionality.
+       */
+      case "status" => context.actorOf(Props(new StatusQuestor(Configuration)))
+
+      case "get"   => context.actorOf(Props(new ClusterQuestor()))
+      case "train" => context.actorOf(Props(new ClusterBuilder(sc)))       
+     
       case _ => null
       
     }

@@ -84,7 +84,7 @@ class ClusterRegistrar extends BaseActor {
         
             case "sequence" => {
         
-              val fields = new FieldBuilder().build(req,"item")
+              val fields = new FieldBuilder().build(req,"sequence")
               cache.addFields(req, fields)
         
               new ServiceResponse(req.service,req.task,Map(Names.REQ_UID-> uid),ClusterStatus.SUCCESS)

@@ -24,6 +24,7 @@ import akka.actor.{ActorRef,Props}
 import akka.pattern.ask
 import akka.util.Timeout
 
+import de.kp.spark.core.Names
 import de.kp.spark.core.model._
 
 import de.kp.spark.cluster.Configuration
@@ -42,50 +43,37 @@ class ClusterBuilder(@transient val sc:SparkContext) extends BaseActor {
     case req:ServiceRequest => {
       
       val origin = sender    
-      val uid = req.data("uid")
+      val response = try {
 
-      req.task match {
-        
-        case "train" => {
-          
-          val response = validate(req) match {
+        validate(req) match {
             
-            case None => train(req).mapTo[ServiceResponse]            
-            case Some(message) => Future {failure(req,message)}
+          case None => train(req).mapTo[ServiceResponse]            
+          case Some(message) => Future {failure(req,message)}
             
-          }
-
-          response.onSuccess {
-            case result => {
-              
-              origin ! result
-              context.stop(self)
-              
-            }
-          }
-
-          response.onFailure {
-            case throwable => {           
-            
-              origin ! failure(req,throwable.toString)	                  
-              context.stop(self)
-              
-            }	  
-          }
-         
         }
         
-        case _ => {
-          
-          val msg = Messages.TASK_IS_UNKNOWN(uid,req.task)
-          
-          origin ! failure(req,msg)
-          context.stop(self)
-          
-        }
-        
+      } catch {
+        case e:Exception => Future {failure(req,e.getMessage)}
       }
       
+      response.onSuccess {
+        
+        case result => {
+          origin ! result
+          context.stop(self)
+        }
+      
+      }
+
+      response.onFailure {
+        
+        case throwable => {           
+          origin ! failure(req,throwable.toString)	                  
+          context.stop(self)
+        }	  
+      
+      }
+       
     }
     
     case _ => {
@@ -102,13 +90,13 @@ class ClusterBuilder(@transient val sc:SparkContext) extends BaseActor {
   
   private def validate(req:ServiceRequest):Option[String] = {
 
-    val uid = req.data("uid")
+    val uid = req.data(Names.REQ_UID)
     
     if (cache.statusExists(req)) {            
       return Some(Messages.TASK_ALREADY_STARTED(uid))   
     }
 
-    req.data.get("algorithm") match {
+    req.data.get(Names.REQ_ALGORITHM) match {
         
       case None => {
         return Some(Messages.NO_ALGORITHM_PROVIDED(uid))              
@@ -123,7 +111,7 @@ class ClusterBuilder(@transient val sc:SparkContext) extends BaseActor {
     
     }  
     
-    req.data.get("source") match {
+    req.data.get(Names.REQ_SOURCE) match {
         
       case None => {
         return Some(Messages.NO_SOURCE_PROVIDED(uid))       
@@ -143,7 +131,7 @@ class ClusterBuilder(@transient val sc:SparkContext) extends BaseActor {
  
   private def actor(req:ServiceRequest):ActorRef = {
 
-    val algorithm = req.data("algorithm")
+    val algorithm = req.data(Names.REQ_ALGORITHM)
     if (algorithm == Algorithms.KMEANS) {      
       context.actorOf(Props(new FeatureActor(sc)))   
 
