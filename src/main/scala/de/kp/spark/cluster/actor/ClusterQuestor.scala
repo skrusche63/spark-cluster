@@ -18,6 +18,7 @@ package de.kp.spark.cluster.actor
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+import de.kp.spark.core.Names
 import de.kp.spark.core.model._
 
 import de.kp.spark.cluster.model._
@@ -33,11 +34,12 @@ class ClusterQuestor extends BaseActor {
     case req:ServiceRequest => {
       
       val origin = sender    
-      val uid = req.data("uid")
+      val uid = req.data(Names.REQ_UID)
 
-      req.task match {
+      val Array(task,topic) = req.task.split(":")
+      topic match {
 
-        case "get:feature" => {
+        case "feature" => {
           /*
            * This request retrieves a set of clustered features
             */
@@ -53,7 +55,7 @@ class ClusterQuestor extends BaseActor {
               
             } else {
 
-              val data = Map("uid" -> uid, "feature" -> points)
+              val data = Map(Names.REQ_UID -> uid, Names.REQ_RESPONSE -> points)
               new ServiceResponse(req.service,req.task,data,ClusterStatus.SUCCESS)
 
             }
@@ -65,7 +67,7 @@ class ClusterQuestor extends BaseActor {
           
         }
 
-        case "get:sequence" => {
+        case "sequence" => {
           /*
            * This request retrieves a set of clustered sequences
             */

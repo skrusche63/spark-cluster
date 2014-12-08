@@ -21,90 +21,14 @@ package de.kp.spark.cluster.actor
 import org.apache.spark.SparkContext
 import akka.actor.{ActorRef,Props}
 
-import akka.pattern.ask
-import akka.util.Timeout
-
-import akka.actor.{OneForOneStrategy, SupervisorStrategy}
-
 import de.kp.spark.core.actor._
 import de.kp.spark.core.model._
 
 import de.kp.spark.cluster.Configuration
-import de.kp.spark.cluster.model._
 
-import scala.concurrent.duration.DurationInt
-import scala.concurrent.Future
-
-class ClusterMaster(@transient val sc:SparkContext) extends BaseActor {
+class ClusterMaster(@transient sc:SparkContext) extends BaseMaster(Configuration) {
   
-  val (duration,retries,time) = Configuration.actor   
-      
-  implicit val ec = context.dispatcher
-  implicit val timeout:Timeout = DurationInt(time).second
-
-  override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries=retries,withinTimeRange = DurationInt(time).minutes) {
-    case _ : Exception => SupervisorStrategy.Restart
-  }
-  
-  def receive = {
-    
-    case req:String => {
-	  	    
-	  val origin = sender
-
-	  val deser = Serializer.deserializeRequest(req)	  
-	  val response = execute(deser)
-	  
-      response.onSuccess {
-        case result => origin ! serialize(result)
-      }
-      response.onFailure {
-        case result => origin ! serialize(failure(deser,Messages.GENERAL_ERROR(deser.data("uid"))))	      
-	  }
-      
-    }
-    
-    case req:ServiceRequest => {
-	  	    
-	  val origin = sender
-
-	  val response = execute(req)
-      response.onSuccess {
-        case result => origin ! result
-      }
-      response.onFailure {
-        case result => origin ! failure(req,Messages.GENERAL_ERROR(req.data("uid")))	      
-	  }
-      
-    }
-  
-    case _ => {
-
-      val msg = Messages.REQUEST_IS_UNKNOWN()          
-      log.error(msg)
-
-    }
-    
-  }
-
-  private def execute(req:ServiceRequest):Future[ServiceResponse] = {
-	
-    try {
-      
-      val Array(task,topic) = req.task.split(":")
-      ask(actor(task),req).mapTo[ServiceResponse]
-    
-    } catch {
-      
-      case e:Exception => {
-        Future {failure(req,e.getMessage)}         
-      }
-    
-    }
-    
-  }
-  
-  private def actor(worker:String):ActorRef = {
+  override def actor(worker:String):ActorRef = {
     
     worker match {
      /*
