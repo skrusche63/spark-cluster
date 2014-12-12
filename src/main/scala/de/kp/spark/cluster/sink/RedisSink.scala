@@ -20,6 +20,8 @@ package de.kp.spark.cluster.sink
 
 import java.util.Date
 
+import de.kp.spark.core.Names
+
 import de.kp.spark.core.model._
 import de.kp.spark.core.redis.RedisClient
 
@@ -39,24 +41,24 @@ class RedisSink {
    
     val now = new Date()
     val timestamp = now.getTime()
-    
-    val k = "matrix:" + service + ":" + req.data("uid")
+
+    val k = "matrix:" + req.data(Names.REQ_SITE) + ":" + req.data(Names.REQ_UID) + ":" + req.data(Names.REQ_NAME) 
     val v = "" + timestamp + ":" + matrix
     
     client.zadd(k,timestamp,v)
     
   }
    
-  def matrixExists(uid:String):Boolean = {
+  def matrixExists(req:ServiceRequest):Boolean = {
 
-    val k = "matrix:" + service + ":" + uid
+    val k = "matrix:" + req.data(Names.REQ_SITE) + ":" + req.data(Names.REQ_UID) + ":" + req.data(Names.REQ_NAME) 
     client.exists(k)
     
   }
   
-  def matrix(uid:String):String = {
+  def matrix(req:ServiceRequest):String = {
 
-    val k = "matrix:" + service + ":" + uid
+    val k = "matrix:" + req.data(Names.REQ_SITE) + ":" + req.data(Names.REQ_UID) + ":" + req.data(Names.REQ_NAME) 
     val matrices = client.zrange(k, 0, -1)
 
     if (matrices.size() == 0) {
@@ -76,23 +78,23 @@ class RedisSink {
     val now = new Date()
     val timestamp = now.getTime()
     
-    val k = "point:" + service + ":" + req.data("uid")
+    val k = "point:" + req.data(Names.REQ_SITE) + ":" + req.data(Names.REQ_UID) + ":" + req.data(Names.REQ_NAME) 
     val v = "" + timestamp + ":" + Serializer.serializeClusteredPoints(points)
     
     client.zadd(k,timestamp,v)
     
   }
    
-  def pointsExist(uid:String):Boolean = {
+  def pointsExist(req:ServiceRequest):Boolean = {
 
-    val k = "point:" + service + ":" + uid
+    val k = "point:" + req.data(Names.REQ_SITE) + ":" + req.data(Names.REQ_UID) + ":" + req.data(Names.REQ_NAME) 
     client.exists(k)
     
   }
 
-  def points(uid:String):String = {
+  def points(req:ServiceRequest):String = {
 
-    val k = "point:" + service + ":" + uid
+    val k = "point:" + req.data(Names.REQ_SITE) + ":" + req.data(Names.REQ_UID) + ":" + req.data(Names.REQ_NAME) 
     val points = client.zrange(k, 0, -1)
 
     if (points.size() == 0) {
@@ -112,23 +114,23 @@ class RedisSink {
     val now = new Date()
     val timestamp = now.getTime()
     
-    val k = "sequence:" + service + ":" + req.data("uid")
+    val k = "sequence:" + req.data(Names.REQ_SITE) + ":" + req.data(Names.REQ_UID) + ":" + req.data(Names.REQ_NAME) 
     val v = "" + timestamp + ":" + Serializer.serializeClusteredSequences(sequences)
     
     client.zadd(k,timestamp,v)
     
   }
    
-  def sequencesExist(uid:String):Boolean = {
+  def sequencesExist(req:ServiceRequest):Boolean = {
 
-    val k = "sequence:" + service + ":" + uid
+    val k = "sequence:" + req.data(Names.REQ_SITE) + ":" + req.data(Names.REQ_UID) + ":" + req.data(Names.REQ_NAME) 
     client.exists(k)
     
   }
 
-  def sequences(uid:String):String = {
+  def sequences(req:ServiceRequest):String = {
 
-    val k = "sequence:" + service + ":" + uid
+    val k = "sequence:" + req.data(Names.REQ_SITE) + ":" + req.data(Names.REQ_UID) + ":" + req.data(Names.REQ_NAME) 
     val sequences = client.zrange(k, 0, -1)
 
     if (sequences.size() == 0) {

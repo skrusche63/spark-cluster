@@ -43,13 +43,12 @@ class ClusterQuestor extends BaseActor {
           /*
            * This request retrieves a set of clustered features
             */
-          val resp = if (sink.pointsExist(uid) == false) {           
+          val resp = if (sink.pointsExist(req) == false) {           
             failure(req,Messages.MODEL_DOES_NOT_EXIST(uid))
             
           } else {    
             
-            /* Retrieve path to clustered points for 'uid' from Redis instance */
-            val points = sink.points(uid)
+            val points = sink.points(req)
             if (points == null) {
               failure(req,Messages.MODEL_DOES_NOT_EXIST(uid))
               
@@ -71,19 +70,18 @@ class ClusterQuestor extends BaseActor {
           /*
            * This request retrieves a set of clustered sequences
             */
-          val resp = if (sink.sequencesExist(uid) == false) {           
+          val resp = if (sink.sequencesExist(req) == false) {           
             failure(req,Messages.MODEL_DOES_NOT_EXIST(uid))
             
           } else {    
             
-            /* Retrieve path to clustered sequences for 'uid' from Redis instance */
-            val sequences = sink.sequences(uid)
+            val sequences = sink.sequences(req)
             if (sequences == null) {
               failure(req,Messages.MODEL_DOES_NOT_EXIST(uid))
               
             } else {
 
-              val data = Map("uid" -> uid, "sequence" -> sequences)
+              val data = Map(Names.REQ_UID -> uid, Names.REQ_RESPONSE -> sequences)
               new ServiceResponse(req.service,req.task,data,ClusterStatus.SUCCESS)
 
             }

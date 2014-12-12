@@ -147,19 +147,22 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkCon
    * of the Similarity Analysis engine; for a certain task (uid) and 
    * a specific model (name), a specification of the respective data 
    * fields can be registered and retrieved from a Redis database.
+   * 
+   * Request parameters for the 'fields' request:
+   * 
+   * - site (String)
+   * - uid (String)
+   * - name (String)
+   * 
    */
   private def doFields[T](ctx:RequestContext) = doRequest(ctx,service,"fields")
 
   private def doRegister[T](ctx:RequestContext,subject:String) = {
- 
-    subject match {
-
-      case "feature" => doRequest(ctx,service,"register:feature")      
-	  case "sequence" => doRequest(ctx,service,"register:sequence")
-	      
-	  case _ => {}
-	  
-    }
+	
+    val task = "register:" + subject
+    
+    val topics = List("feature","sequence")
+    if (topics.contains(subject)) doRequest(ctx,service,task)
 
   }
   /**
@@ -169,35 +172,32 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkCon
    */
 
   private def doIndex[T](ctx:RequestContext,subject:String) = {
-	    
-    subject match {
-
-      case "feature" => doRequest(ctx,service,"index:feature")      
-	  case "sequence" => doRequest(ctx,service,"index:sequence")
-	      
-	  case _ => {}
-	  
-    }
+	
+    val task = "index:" + subject
+    
+    val topics = List("feature","sequence")
+    if (topics.contains(subject)) doRequest(ctx,service,task)
     
   }
 
   private def doTrack[T](ctx:RequestContext,subject:String) = {
-	    
-    subject match {
-
-      case "feature" => doRequest(ctx,service,"track:feature")      
-	  case "sequence" => doRequest(ctx,service,"track:sequence")
-	      
-	  case _ => {}
-	  
-    }
+	
+    val task = "track:" + subject
+    
+    val topics = List("feature","sequence")
+    if (topics.contains(subject)) doRequest(ctx,service,task)
     
   }
 
   /**
    * 'status' is an administration request to determine whether a certain data
-   * mining task has been finished or not; the only parameter required for status 
-   * requests is the unique identifier of a certain task
+   * mining task has been finished or not.
+   * 
+   * Request parameters for the 'status' request:
+   * 
+   * - site (String)
+   * - uid (String)
+   * 
    */
   private def doStatus[T](ctx:RequestContext,subject:String) = {
     
@@ -218,17 +218,20 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkCon
     }
   
   }
-
+  /**
+   * Request parameters for the 'get' request:
+   * 
+   * - site (String)
+   * - uid (String)
+   * - name (String)
+   * 
+   */  
   private def doGet[T](ctx:RequestContext,subject:String) = {
-	    
-    subject match {
-
-      case "feature"  => doRequest(ctx,service,"get:feature")
-	  case "sequence" => doRequest(ctx,service,"get:sequence")
-	      
-	  case _ => {}
-	  
-    }
+	
+    val task = "get:" + subject
+    
+    val topics = List("feature","sequence")
+    if (topics.contains(subject)) doRequest(ctx,service,task)
     
   }
 
