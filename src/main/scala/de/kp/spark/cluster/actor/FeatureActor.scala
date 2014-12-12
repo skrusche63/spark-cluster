@@ -100,10 +100,10 @@ class FeatureActor(@transient val sc:SparkContext) extends BaseActor {
     savePoints(req,new ClusteredPoints(clustered))
     
     /* Update cache */
-    cache.addStatus(req,ClusterStatus.FINISHED)
+    cache.addStatus(req,ClusterStatus.TRAINING_FINISHED)
     
     /* Notify potential listeners */
-    notify(req,ClusterStatus.FINISHED)
+    notify(req,ClusterStatus.TRAINING_FINISHED)
     
   }
   

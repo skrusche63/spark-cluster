@@ -45,7 +45,7 @@ import de.kp.spark.cluster.Configuration
 import de.kp.spark.cluster.actor.ClusterMaster
 import de.kp.spark.cluster.model._
 
-class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkContext) extends HttpService with Directives {
+class RestApi(host:String,port:Int,system:ActorSystem,@transient sc:SparkContext) extends HttpService with Directives {
 
   implicit val ec:ExecutionContext = system.dispatcher  
   import de.kp.spark.core.rest.RestJsonSupport._
@@ -116,6 +116,17 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkCon
 	  }
     }  ~      
     /*
+     * A 'params' request supports the retrieval of the parameters
+     * used for a certain model training task
+     */
+    path("params") {  
+	  post {
+	    respondWithStatus(OK) {
+	      ctx => doParams(ctx)
+	    }
+	  }
+    }  ~ 
+    /*
      * A 'status' request supports the retrieval of the status
      * with respect to a certain training task (uid). The latest
      * status or all stati of a certain task are returned.
@@ -156,7 +167,28 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkCon
    * 
    */
   private def doFields[T](ctx:RequestContext) = doRequest(ctx,service,"fields")
-
+  /**
+   * Request parameters for the 'register' request:
+   * 
+   * - site (String)
+   * - uid (String)
+   * - name (String)
+   * 
+   * The information element, 'feature' or 'sequence' determines how to proceed:
+   * 
+   * topic: feature
+   * 
+   * - names (String, comma separated list of feature names)
+   * - types (String, comma separated list of feature types)
+   * 
+   * topic:sequence
+   * 
+   * - user (String)
+   * - timestamp (String) 
+   * - group (String)
+   * - item (String)
+   * 
+   */    
   private def doRegister[T](ctx:RequestContext,subject:String) = {
 	
     val task = "register:" + subject
@@ -169,8 +201,26 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkCon
    * 'index' & 'track' requests support data registration in an Elasticsearch
    * index; while items are can be provided via the REST interface, rules are
    * built by the Similarity Analysis engine and then registered in the index.
+   * 
+   * Request parameters for the 'index' request:
+   * 
+   * - site (String)
+   * - uid (String)
+   * - name (String)
+   * 
+   * - source (String)
+   * - type (String)
+   * 
+   * The information element, 'feature' or 'sequence' determines how to proceed:
+   * 
+   * topic: feature
+   * 
+   * - names (String, comma separated list of feature names)
+   * - types (String, comma separated list of feature types)
+   * 
+   * topic:sequence
+   * 
    */
-
   private def doIndex[T](ctx:RequestContext,subject:String) = {
 	
     val task = "index:" + subject
@@ -179,7 +229,31 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkCon
     if (topics.contains(subject)) doRequest(ctx,service,task)
     
   }
-
+  /**
+   * Request parameters for the 'track' request:
+   * 
+   * - site (String)
+   * - uid (String)
+   * - name (String)
+   * 
+   * - source (String)
+   * - type (String)
+   * 
+   * The information element, 'feature' or 'sequence' determines how to proceed:
+   * 
+   * topic: feature
+   * 
+   * - lbl. xxx (String, target value)
+   * - fea. xxx (Double, predictor value) 
+   * 
+   * topic:sequence
+   * 
+   * - user (String)
+   * - timestamp (Long)
+   * - group (String)
+   * - item (Integer)
+   * 
+   */   
   private def doTrack[T](ctx:RequestContext,subject:String) = {
 	
     val task = "track:" + subject
@@ -188,7 +262,6 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkCon
     if (topics.contains(subject)) doRequest(ctx,service,task)
     
   }
-
   /**
    * 'status' is an administration request to determine whether a certain data
    * mining task has been finished or not.
@@ -234,8 +307,54 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient val sc:SparkCon
     if (topics.contains(subject)) doRequest(ctx,service,task)
     
   }
-
+  /**
+   * Request parameters for the 'train' request
+   * 
+   * - site (String)
+   * - uid (String)
+   * - name (String)
+   * 
+   * - algorithm (String, KMEANS, SKMEANS)
+   * - source (String, ELASTIC, FILE, JDBC)
+   * 
+   * and the following parameters depend on the selected source:
+   * 
+   * ELASTIC:
+   * 
+   * - source.index (String)
+   * - source.type (String)
+   * - query (String)
+   * 
+   * JDBC:
+   * 
+   * - query (String)
+   * 
+   * and the model building parameters have to be distinguished by the
+   * selected algorithm
+   * 
+   * KMEANS:
+   * 
+   * - top (Integer)
+   * - iterations (Integer)
+   * - strategy (String, distance, entropy)
+   * 
+   * SKMEANS:
+   *  
+   * - k (Integer)
+   * - top (Integer)
+   * - interations (Integer)
+   * 
+   */
   private def doTrain[T](ctx:RequestContext) = doRequest(ctx,service,"train")
+  /**
+   * Request parameters for the 'params' request:
+   * 
+   * - site (String)
+   * - uid (String)
+   * - name (String)
+   * 
+   */
+  private def doParams[T](ctx:RequestContext) = doRequest(ctx,service,"params")
   
   private def doRequest[T](ctx:RequestContext,service:String,task:String) = {
      
