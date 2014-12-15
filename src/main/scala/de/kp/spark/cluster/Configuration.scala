@@ -56,7 +56,7 @@ object Configuration extends CoreConf {
     
   }
    
-  override def file:List[String] = {
+  override def input:List[String] = {
   
     val cfg = config.getConfig("file")
     
@@ -73,7 +73,9 @@ object Configuration extends CoreConf {
     cfg.getString("path")   
     
   }
- 
+  
+  override def output:List[String] = null
+  
   override def mysql:(String,String,String,String) = {
 
    val cfg = config.getConfig("mysql")
