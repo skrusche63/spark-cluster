@@ -39,33 +39,6 @@ class ClusterQuestor extends BaseActor {
       val Array(task,topic) = req.task.split(":")
       topic match {
 
-        case "feature" => {
-          /*
-           * This request retrieves a set of clustered features
-            */
-          val resp = if (sink.pointsExist(req) == false) {           
-            failure(req,Messages.MODEL_DOES_NOT_EXIST(uid))
-            
-          } else {    
-            
-            val points = sink.points(req)
-            if (points == null) {
-              failure(req,Messages.MODEL_DOES_NOT_EXIST(uid))
-              
-            } else {
-
-              val data = Map(Names.REQ_UID -> uid, Names.REQ_RESPONSE -> points)
-              new ServiceResponse(req.service,req.task,data,ClusterStatus.SUCCESS)
-
-            }
-          
-          }
-             
-          origin ! resp
-          context.stop(self)
-          
-        }
-
         case "sequence" => {
           /*
            * This request retrieves a set of clustered sequences
@@ -82,6 +55,33 @@ class ClusterQuestor extends BaseActor {
             } else {
 
               val data = Map(Names.REQ_UID -> uid, Names.REQ_RESPONSE -> sequences)
+              new ServiceResponse(req.service,req.task,data,ClusterStatus.SUCCESS)
+
+            }
+          
+          }
+             
+          origin ! resp
+          context.stop(self)
+          
+        }
+
+        case "vector" => {
+          /*
+           * This request retrieves a set of clustered features
+            */
+          val resp = if (sink.pointsExist(req) == false) {           
+            failure(req,Messages.MODEL_DOES_NOT_EXIST(uid))
+            
+          } else {    
+            
+            val points = sink.points(req)
+            if (points == null) {
+              failure(req,Messages.MODEL_DOES_NOT_EXIST(uid))
+              
+            } else {
+
+              val data = Map(Names.REQ_UID -> uid, Names.REQ_RESPONSE -> points)
               new ServiceResponse(req.service,req.task,data,ClusterStatus.SUCCESS)
 
             }

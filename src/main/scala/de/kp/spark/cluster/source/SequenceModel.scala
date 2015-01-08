@@ -34,13 +34,13 @@ class SequenceModel(@transient sc:SparkContext) extends Serializable {
     val spec = sc.broadcast(Sequences.get(req))
     val dataset = rawset.map(data => {
       
-      val site = data(spec.value(Names.SITE_FIELD)._1)
-      val timestamp = data(spec.value(Names.TIMESTAMP_FIELD)._1).toLong
+      val site = data(spec.value(Names.SITE_FIELD))
+      val timestamp = data(spec.value(Names.TIMESTAMP_FIELD)).toLong
 
-      val user = data(spec.value(Names.USER_FIELD)._1)      
-      val group = data(spec.value(Names.GROUP_FIELD)._1)
+      val user = data(spec.value(Names.USER_FIELD))      
+      val group = data(spec.value(Names.GROUP_FIELD))
 
-      val item  = data(spec.value(Names.ITEM_FIELD)._1)
+      val item  = data(spec.value(Names.ITEM_FIELD))
       
       (site,user,group,timestamp,item)
       
@@ -108,13 +108,13 @@ class SequenceModel(@transient sc:SparkContext) extends Serializable {
     val spec = sc.broadcast(Sequences.get(req))
     val dataset = rawset.map(data => {
       
-      val site = data(spec.value(Names.SITE_FIELD)._1).asInstanceOf[String]
-      val timestamp = data(spec.value(Names.TIMESTAMP_FIELD)._1).asInstanceOf[Long]
+      val site = data(spec.value(Names.SITE_FIELD)).asInstanceOf[String]
+      val timestamp = data(spec.value(Names.TIMESTAMP_FIELD)).asInstanceOf[Long]
 
-      val user = data(spec.value(Names.USER_FIELD)._1).asInstanceOf[String] 
-      val group = data(spec.value(Names.GROUP_FIELD)._1).asInstanceOf[String]
+      val user = data(spec.value(Names.USER_FIELD)).asInstanceOf[String] 
+      val group = data(spec.value(Names.GROUP_FIELD)).asInstanceOf[String]
       
-      val item  = data(spec.value(Names.ITEM_FIELD)._1).asInstanceOf[Int]
+      val item  = data(spec.value(Names.ITEM_FIELD)).asInstanceOf[Int]
       
       (site,user,group,timestamp,item)
       
@@ -170,13 +170,13 @@ class SequenceModel(@transient sc:SparkContext) extends Serializable {
     val spec = sc.broadcast(Sequences.get(req))
     val dataset = rawset.map(data => {
       
-      val site = data(spec.value(Names.SITE_FIELD)._1).asInstanceOf[String]
-      val timestamp = data(spec.value(Names.TIMESTAMP_FIELD)._1).asInstanceOf[Long]
+      val site = data(spec.value(Names.SITE_FIELD)).asInstanceOf[String]
+      val timestamp = data(spec.value(Names.TIMESTAMP_FIELD)).asInstanceOf[Long]
 
-      val user = data(spec.value(Names.USER_FIELD)._1).asInstanceOf[String] 
-      val group = data(spec.value(Names.GROUP_FIELD)._1).asInstanceOf[String]
+      val user = data(spec.value(Names.USER_FIELD)).asInstanceOf[String] 
+      val group = data(spec.value(Names.GROUP_FIELD)).asInstanceOf[String]
       
-      val item  = data(spec.value(Names.ITEM_FIELD)._1).asInstanceOf[Int]
+      val item  = data(spec.value(Names.ITEM_FIELD)).asInstanceOf[Int]
       
       (site,user,group,timestamp,item)
       

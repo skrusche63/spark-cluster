@@ -39,6 +39,8 @@ import de.kp.spark.cluster.spec.Sequences
 class SequenceSource (@transient sc:SparkContext) {
 
   private val config = Configuration
+  private val base = config.input(1)
+  
   private val model = new SequenceModel(sc)
   
   def get(req:ServiceRequest):RDD[NumberedSequence] = {
@@ -63,8 +65,10 @@ class SequenceSource (@transient sc:SparkContext) {
        * the service configuration  
        */    
       case Sources.FILE => {
+       
+        val store = String.format("""%s/%s/%s""",base,req.data(Names.REQ_NAME),req.data(Names.REQ_UID))
 
-        val rawset = new FileSource(sc).connect(config.input(1),req)
+        val rawset = new FileSource(sc).connect(store,req)
         model.buildFile(req,rawset)
         
       }
@@ -75,7 +79,7 @@ class SequenceSource (@transient sc:SparkContext) {
        */
       case Sources.JDBC => {
    
-        val fields = Sequences.get(req).map(kv => kv._2._1).toList  
+        val fields = Sequences.get(req).map(kv => kv._2).toList  
                 
         val rawset = new JdbcSource(sc).connect(config,req,fields)
         model.buildJDBC(req,rawset)
@@ -87,10 +91,10 @@ class SequenceSource (@transient sc:SparkContext) {
        * configuration
        */
       case Sources.PARQUET => {
-   
-        val fields = Sequences.get(req).map(kv => kv._2._1).toList  
+       
+        val store = String.format("""%s/%s/%s""",base,req.data(Names.REQ_NAME),req.data(Names.REQ_UID))
                 
-        val rawset = new ParquetSource(sc).connect(config.input(0),req,fields)
+        val rawset = new ParquetSource(sc).connect(store,req)
         model.buildParquet(req,rawset)
         
       }

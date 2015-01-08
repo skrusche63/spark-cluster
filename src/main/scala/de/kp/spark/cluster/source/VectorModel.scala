@@ -21,6 +21,7 @@ package de.kp.spark.cluster.source
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
+import de.kp.spark.core.Names
 import de.kp.spark.core.model._
 
 import de.kp.spark.cluster.model._
@@ -28,25 +29,22 @@ import de.kp.spark.cluster.spec.Features
 
 import scala.collection.mutable.ArrayBuffer
 
-class FeatureModel(@transient sc:SparkContext) extends Serializable {
+class VectorModel(@transient sc:SparkContext) extends Serializable {
   
   def buildElastic(req:ServiceRequest,rawset:RDD[Map[String,String]]):RDD[LabeledPoint] = {
    
     val spec = sc.broadcast(Features.get(req))
-    rawset.map(data => {
+    val dataset = rawset.map(data => {
       
-      val fields = spec.value
+      val row = data(spec.value(Names.ROW_FIELD)).toLong
+      val col = data(spec.value(Names.COL_FIELD)).toLong
 
-      val label = data(fields.head)
-      val features = ArrayBuffer.empty[Double]
-      
-      for (field <- fields.tail) {
-        features += data(field).toDouble
-      }
-      
-      new LabeledPoint(label,features.toArray)
+      val value = data(spec.value(Names.VAL_FIELD))
+      (row,col,value)
       
     })
+
+    buildLabeledPoints(dataset)
     
   }
   
@@ -64,41 +62,50 @@ class FeatureModel(@transient sc:SparkContext) extends Serializable {
   def buildParquet(req:ServiceRequest,rawset:RDD[Map[String,Any]]):RDD[LabeledPoint] = {
     
     val spec = sc.broadcast(Features.get(req))
-    rawset.map(data => {
+    val dataset = rawset.map(data => {
       
-      val fields = spec.value
+      val row = data(spec.value(Names.ROW_FIELD)).asInstanceOf[Long]
+      val col = data(spec.value(Names.COL_FIELD)).asInstanceOf[Long]
 
-      val label = data(fields.head).asInstanceOf[String]
-      val features = ArrayBuffer.empty[Double]
-      
-      for (field <- fields.tail) {
-        features += data(field).asInstanceOf[Double]
-      }
-      
-      new LabeledPoint(label,features.toArray)
+      val value = data(spec.value(Names.VAL_FIELD)).asInstanceOf[String] 
+      (row,col,value)
       
     })
+
+    buildLabeledPoints(dataset)
     
   }
   
   def buildJDBC(req:ServiceRequest,rawset:RDD[Map[String,Any]]):RDD[LabeledPoint] = {
     
     val spec = sc.broadcast(Features.get(req))
-    rawset.map(data => {
+    val dataset = rawset.map(data => {
       
-      val fields = spec.value
+      val row = data(spec.value(Names.ROW_FIELD)).asInstanceOf[Long]
+      val col = data(spec.value(Names.COL_FIELD)).asInstanceOf[Long]
 
-      val label = data(fields.head).asInstanceOf[String]
-      val features = ArrayBuffer.empty[Double]
-      
-      for (field <- fields.tail) {
-        features += data(field).asInstanceOf[Double]
-      }
-      
-      new LabeledPoint(label,features.toArray)
+      val value = data(spec.value(Names.VAL_FIELD)).asInstanceOf[String] 
+      (row,col,value)
       
     })
+
+    buildLabeledPoints(dataset)
     
+  }
+
+  private def buildLabeledPoints(dataset:RDD[(Long,Long,String)]):RDD[LabeledPoint] = {
+  
+    dataset.groupBy(x => x._1).map(x => {
+      
+      val data = x._2.map(v => (v._2,v._3)).toSeq.sortBy(v => v._1)
+      
+      val label = data.head._2
+      val features = data.tail.map(_._2.toDouble)
+      
+      new LabeledPoint(label,features.toArray)
+    
+    })
+ 
   }
 
 }

@@ -24,7 +24,7 @@ import de.kp.spark.core.redis.RedisCache
 import de.kp.spark.cluster.Configuration
 
 import scala.xml._
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.HashMap
 
 object Features extends Serializable {
   
@@ -33,9 +33,9 @@ object Features extends Serializable {
   val (host,port) = Configuration.redis
   val cache = new RedisCache(host,port.toInt)
 
-  def get(req:ServiceRequest):List[String] = {
+  def get(req:ServiceRequest):Map[String,String] = {
 
-    val fields = ArrayBuffer.empty[String]
+    val fields = HashMap.empty[String,String]
   
     try {
           
@@ -43,24 +43,28 @@ object Features extends Serializable {
         
         val fieldspec = cache.fields(req)
         for (field <- fieldspec) {
-          fields += field.name
+          fields += field.name -> field.value
+          
         }
-
-        
+    
       } else {
-
+        
         val root = XML.load(getClass.getClassLoader.getResource(path))     
         for (field <- root \ "field") {
-          fields += field.text 
+      
+          val name = (field \ "@name").toString
+          val valu = field.text
+          fields += name -> valu
+      
         }
       
-     }
+      }
       
     } catch {
       case e:Exception => {}
     }
     
-    fields.toList
+    fields.toMap
     
   }
 

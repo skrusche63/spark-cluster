@@ -32,13 +32,15 @@ import de.kp.spark.cluster.model._
 import de.kp.spark.cluster.spec.Features
 
 /**
- * FeatureSource is an abstraction layer on top the physical 
+ * VectorSource is an abstraction layer on top the physical 
  * data sources supported by KMeans outlier detection
  */
-class FeatureSource(@transient sc:SparkContext) {
+class VectorSource(@transient sc:SparkContext) {
 
   private val config = Configuration
-  private val model = new FeatureModel(sc)
+  private val base = config.input(0)
+  
+  private val model = new VectorModel(sc)
   
   def get(req:ServiceRequest):RDD[LabeledPoint] = {
    
@@ -62,8 +64,10 @@ class FeatureSource(@transient sc:SparkContext) {
        * configuration  
        */    
       case Sources.FILE => {
+       
+        val store = String.format("""%s/%s/%s""",base,req.data(Names.REQ_NAME),req.data(Names.REQ_UID))
          
-        val rawset = new FileSource(sc).connect(config.input(0),req)        
+        val rawset = new FileSource(sc).connect(store,req)        
         model.buildFile(req,rawset)
         
       }
@@ -74,7 +78,7 @@ class FeatureSource(@transient sc:SparkContext) {
        */
       case Sources.JDBC => {
     
-        val fields = Features.get(req)
+        val fields = Features.get(req).map(kv => kv._2).toList  
         
         val rawset = new JdbcSource(sc).connect(config,req,fields)
         model.buildJDBC(req,rawset)
@@ -85,10 +89,10 @@ class FeatureSource(@transient sc:SparkContext) {
        * the configuration parameters are retrieved from the service configuration
        */
       case Sources.PARQUET => {
-    
-        val fields = Features.get(req)
+       
+        val store = String.format("""%s/%s/%s""",base,req.data(Names.REQ_NAME),req.data(Names.REQ_UID))
         
-        val rawset = new ParquetSource(sc).connect(config.input(0),req,fields)
+        val rawset = new ParquetSource(sc).connect(store,req)
         model.buildParquet(req,rawset)
         
       }

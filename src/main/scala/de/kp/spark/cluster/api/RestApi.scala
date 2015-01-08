@@ -174,12 +174,7 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient sc:SparkContext
    * - uid (String)
    * - name (String)
    * 
-   * The information element, 'feature' or 'sequence' determines how to proceed:
-   * 
-   * topic: feature
-   * 
-   * - names (String, comma separated list of feature names)
-   * - types (String, comma separated list of feature types)
+   * The information element, 'sequence' or 'vector' determines how to proceed:
    * 
    * topic:sequence
    * 
@@ -188,12 +183,18 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient sc:SparkContext
    * - group (String)
    * - item (String)
    * 
+   * topic:vector
+   * 
+   * - row (String)
+   * - col (String)
+   * - val (String)
+   * 
    */    
   private def doRegister[T](ctx:RequestContext,subject:String) = {
 	
     val task = "register:" + subject
     
-    val topics = List("feature","sequence")
+    val topics = List("sequence","vector")
     if (topics.contains(subject)) doRequest(ctx,service,task)
 
   }
@@ -208,24 +209,15 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient sc:SparkContext
    * - uid (String)
    * - name (String)
    * 
-   * - source (String)
+   * - index (String)
    * - type (String)
-   * 
-   * The information element, 'feature' or 'sequence' determines how to proceed:
-   * 
-   * topic: feature
-   * 
-   * - names (String, comma separated list of feature names)
-   * - types (String, comma separated list of feature types)
-   * 
-   * topic:sequence
    * 
    */
   private def doIndex[T](ctx:RequestContext,subject:String) = {
 	
     val task = "index:" + subject
     
-    val topics = List("feature","sequence")
+    val topics = List("sequence","vector")
     if (topics.contains(subject)) doRequest(ctx,service,task)
     
   }
@@ -239,12 +231,7 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient sc:SparkContext
    * - source (String)
    * - type (String)
    * 
-   * The information element, 'feature' or 'sequence' determines how to proceed:
-   * 
-   * topic: feature
-   * 
-   * - lbl. xxx (String, target value)
-   * - fea. xxx (Double, predictor value) 
+   * The information element, 'sequence' or 'vector' determines how to proceed:
    * 
    * topic:sequence
    * 
@@ -253,12 +240,18 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient sc:SparkContext
    * - group (String)
    * - item (Integer)
    * 
+   * topic:vector
+   * 
+   * - row (Long)
+   * - col (Long)
+   * - val (String,Double)
+   * 
    */   
   private def doTrack[T](ctx:RequestContext,subject:String) = {
 	
     val task = "track:" + subject
     
-    val topics = List("feature","sequence")
+    val topics = List("sequence","vector")
     if (topics.contains(subject)) doRequest(ctx,service,task)
     
   }
@@ -303,7 +296,7 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient sc:SparkContext
 	
     val task = "get:" + subject
     
-    val topics = List("feature","sequence")
+    val topics = List("sequence","vector")
     if (topics.contains(subject)) doRequest(ctx,service,task)
     
   }

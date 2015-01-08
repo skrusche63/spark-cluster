@@ -33,9 +33,9 @@ object Sequences {
   val (host,port) = Configuration.redis
   val cache = new RedisCache(host,port.toInt)
 
-  def get(req:ServiceRequest):Map[String,(String,String)] = {
+  def get(req:ServiceRequest):Map[String,String] = {
 
-    val fields = HashMap.empty[String,(String,String)]
+    val fields = HashMap.empty[String,String]
   
     try {
           
@@ -43,12 +43,7 @@ object Sequences {
         
         val fieldspec = cache.fields(req)
         for (field <- fieldspec) {
-        
-          val _name = field.name
-          val _type = field.datatype
-          
-          val _mapping = field.value
-          fields += _name -> (_mapping,_type) 
+          fields += field.name -> field.value
           
         }
     
@@ -57,11 +52,9 @@ object Sequences {
         val root = XML.load(getClass.getClassLoader.getResource(path))     
         for (field <- root \ "field") {
       
-          val _name  = (field \ "@name").toString
-          val _type  = (field \ "@type").toString
-
-          val _mapping = field.text
-          fields += _name -> (_mapping,_type) 
+          val name = (field \ "@name").toString
+          val valu = field.text
+          fields += name -> valu
       
         }
       

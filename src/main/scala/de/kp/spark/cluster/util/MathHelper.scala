@@ -81,10 +81,14 @@ object MathHelper {
   }
   
   /** 
+   * Z-Score Transformation:
+   * -----------------------
+   * 
    * Data is a distributed list of feature vectors (Array[Double]) with the
    * following semantic: vector = [f_0,f_1,f_2, ...]; i.e. each vectors holds
    * a certain value for feature i at position i. Normalizing those data means
    * that one has to normalize all values of feature f_0, all values of f_1 etc  
+   * 
    */
   def normalize(data:RDD[Array[Double]]):RDD[Array[Double]] = {
     

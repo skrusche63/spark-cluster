@@ -26,7 +26,7 @@ import de.kp.spark.core.model._
 import de.kp.spark.cluster.FKMeans
 import de.kp.spark.cluster.model._
 
-import de.kp.spark.cluster.source.FeatureSource
+import de.kp.spark.cluster.source.VectorSource
 import de.kp.spark.cluster.sink.RedisSink
 
 class FeatureActor(@transient val sc:SparkContext) extends BaseActor {
@@ -46,7 +46,7 @@ class FeatureActor(@transient val sc:SparkContext) extends BaseActor {
 
           cache.addStatus(req,ClusterStatus.STARTED)
           
-          val dataset = new FeatureSource(sc).get(req)          
+          val dataset = new VectorSource(sc).get(req)          
           findClusters(req,dataset,params)
 
         } catch {
