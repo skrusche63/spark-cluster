@@ -39,8 +39,10 @@ class VectorModel(@transient sc:SparkContext) extends Serializable {
       val row = data(spec.value(Names.ROW_FIELD)).toLong
       val col = data(spec.value(Names.COL_FIELD)).toLong
 
+      val label = data(spec.value(Names.LBL_FIELD))
       val value = data(spec.value(Names.VAL_FIELD))
-      (row,col,value)
+      
+      (row,col,label,value)
       
     })
 
@@ -67,8 +69,10 @@ class VectorModel(@transient sc:SparkContext) extends Serializable {
       val row = data(spec.value(Names.ROW_FIELD)).asInstanceOf[Long]
       val col = data(spec.value(Names.COL_FIELD)).asInstanceOf[Long]
 
+      val label = data(spec.value(Names.LBL_FIELD)).asInstanceOf[String] 
       val value = data(spec.value(Names.VAL_FIELD)).asInstanceOf[String] 
-      (row,col,value)
+      
+      (row,col,label,value)
       
     })
 
@@ -84,26 +88,46 @@ class VectorModel(@transient sc:SparkContext) extends Serializable {
       val row = data(spec.value(Names.ROW_FIELD)).asInstanceOf[Long]
       val col = data(spec.value(Names.COL_FIELD)).asInstanceOf[Long]
 
+      val label = data(spec.value(Names.LBL_FIELD)).asInstanceOf[String] 
       val value = data(spec.value(Names.VAL_FIELD)).asInstanceOf[String] 
-      (row,col,value)
       
+      (row,col,label,value)
+       
     })
 
     buildLabeledPoints(dataset)
     
   }
 
-  private def buildLabeledPoints(dataset:RDD[(Long,Long,String)]):RDD[LabeledPoint] = {
+  /**
+   * This method creates a set of labeled datapoints that are 
+   * used for clustering or similarity analysis
+   */
+  private def buildLabeledPoints(dataset:RDD[(Long,Long,String,String)]):RDD[LabeledPoint] = {
   
+    /*
+     * The dataset specifies a 'sparse' data description;
+     * in order to generate dense vectors from it, we first
+     * have to determine the minimum (= 0) and maximum column
+     * value to create equal size vectors
+     */
+    val size = sc.broadcast((dataset.map(_._2).max + 1).toInt)
+    
     dataset.groupBy(x => x._1).map(x => {
       
-      val data = x._2.map(v => (v._2,v._3)).toSeq.sortBy(v => v._1)
+      /*
+       * The label is a denormalized value and is assigned to
+       * each column specific dataset as well; this implies
+       * that we only need this value once
+       */
+      val label = x._2.head._3
+      val features = Array.fill[Double](size.value)(0)
       
-      val label = data.head._2
-      val features = data.tail.map(_._2.toDouble)
+      val data = x._2.map(v => (v._2.toInt,v._4.toDouble)).toSeq.sortBy(v => v._1)
+      data.foreach(x => features(x._1) = x._2)
       
-      new LabeledPoint(label,features.toArray)
-    
+      new LabeledPoint(label,features)
+      
     })
  
   }
