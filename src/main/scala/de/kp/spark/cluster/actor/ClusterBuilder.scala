@@ -18,7 +18,6 @@ package de.kp.spark.cluster.actor
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-import org.apache.spark.SparkContext
 import akka.actor.{ActorRef,Props}
 
 import de.kp.spark.core.Names
@@ -26,10 +25,10 @@ import de.kp.spark.core.Names
 import de.kp.spark.core.actor._
 import de.kp.spark.core.model._
 
-import de.kp.spark.cluster.Configuration
+import de.kp.spark.cluster.RequestContext
 import de.kp.spark.cluster.model._
 
-class ClusterBuilder(@transient sc:SparkContext) extends BaseTrainer(Configuration) {
+class ClusterBuilder(@transient ctx:RequestContext) extends BaseTrainer(ctx.config) {
   
   override def validate(req:ServiceRequest):Option[String] = {
 
@@ -76,10 +75,10 @@ class ClusterBuilder(@transient sc:SparkContext) extends BaseTrainer(Configurati
 
     val algorithm = req.data(Names.REQ_ALGORITHM)
     if (algorithm == Algorithms.KMEANS) {      
-      context.actorOf(Props(new FeatureActor(sc)))   
+      context.actorOf(Props(new FeatureActor(ctx)))   
 
     } else if (algorithm == Algorithms.SKMEANS) {
-      context.actorOf(Props(new SequenceActor(sc)))   
+      context.actorOf(Props(new SequenceActor(ctx)))   
       
     } else {
       /* do nothing */

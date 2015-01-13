@@ -18,29 +18,30 @@ package de.kp.spark.cluster.source
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
 import de.kp.spark.core.Names
 import de.kp.spark.core.model._
+
+import de.kp.spark.cluster.RequestContext
 
 import de.kp.spark.cluster.model._
 import de.kp.spark.cluster.spec.Features
 
 import scala.collection.mutable.ArrayBuffer
 
-class VectorModel(@transient sc:SparkContext) extends Serializable {
+class VectorModel(@transient ctx:RequestContext) extends Serializable {
   
   def buildElastic(req:ServiceRequest,rawset:RDD[Map[String,String]]):RDD[LabeledPoint] = {
    
-    val spec = sc.broadcast(Features.get(req))
+    val spec = ctx.sc.broadcast(Features.get(req))
     val dataset = rawset.map(data => {
       
       val row = data(spec.value(Names.ROW_FIELD)).toLong
       val col = data(spec.value(Names.COL_FIELD)).toLong
 
       val label = data(spec.value(Names.LBL_FIELD))
-      val value = data(spec.value(Names.VAL_FIELD))
+      val value = data(spec.value(Names.VAL_FIELD)).toDouble
       
       (row,col,label,value)
       
@@ -52,25 +53,27 @@ class VectorModel(@transient sc:SparkContext) extends Serializable {
   
   def buildFile(req:ServiceRequest,rawset:RDD[String]):RDD[LabeledPoint] = {
     
-    rawset.map(valu => {
+    val dataset = rawset.map(valu => {
       
       val Array(label,features) = valu.split(",")  
-      new LabeledPoint(label,features.split(" ").map(_.toDouble))
+      (label,features.split(" ").map(_.toDouble))
     
-    })
+    }).zipWithIndex
+    
+    dataset.map(x => LabeledPoint(x._2, x._1._1, x._1._2))
     
   }
   
   def buildParquet(req:ServiceRequest,rawset:RDD[Map[String,Any]]):RDD[LabeledPoint] = {
     
-    val spec = sc.broadcast(Features.get(req))
+    val spec = ctx.sc.broadcast(Features.get(req))
     val dataset = rawset.map(data => {
       
       val row = data(spec.value(Names.ROW_FIELD)).asInstanceOf[Long]
       val col = data(spec.value(Names.COL_FIELD)).asInstanceOf[Long]
 
       val label = data(spec.value(Names.LBL_FIELD)).asInstanceOf[String] 
-      val value = data(spec.value(Names.VAL_FIELD)).asInstanceOf[String] 
+      val value = data(spec.value(Names.VAL_FIELD)).asInstanceOf[Double] 
       
       (row,col,label,value)
       
@@ -82,14 +85,14 @@ class VectorModel(@transient sc:SparkContext) extends Serializable {
   
   def buildJDBC(req:ServiceRequest,rawset:RDD[Map[String,Any]]):RDD[LabeledPoint] = {
     
-    val spec = sc.broadcast(Features.get(req))
+    val spec = ctx.sc.broadcast(Features.get(req))
     val dataset = rawset.map(data => {
       
       val row = data(spec.value(Names.ROW_FIELD)).asInstanceOf[Long]
       val col = data(spec.value(Names.COL_FIELD)).asInstanceOf[Long]
 
       val label = data(spec.value(Names.LBL_FIELD)).asInstanceOf[String] 
-      val value = data(spec.value(Names.VAL_FIELD)).asInstanceOf[String] 
+      val value = data(spec.value(Names.VAL_FIELD)).asInstanceOf[Double] 
       
       (row,col,label,value)
        
@@ -103,7 +106,7 @@ class VectorModel(@transient sc:SparkContext) extends Serializable {
    * This method creates a set of labeled datapoints that are 
    * used for clustering or similarity analysis
    */
-  private def buildLabeledPoints(dataset:RDD[(Long,Long,String,String)]):RDD[LabeledPoint] = {
+  private def buildLabeledPoints(dataset:RDD[(Long,Long,String,Double)]):RDD[LabeledPoint] = {
   
     /*
      * The dataset specifies a 'sparse' data description;
@@ -111,10 +114,11 @@ class VectorModel(@transient sc:SparkContext) extends Serializable {
      * have to determine the minimum (= 0) and maximum column
      * value to create equal size vectors
      */
-    val size = sc.broadcast((dataset.map(_._2).max + 1).toInt)
+    val size = ctx.sc.broadcast((dataset.map(_._2).max + 1).toInt)
     
     dataset.groupBy(x => x._1).map(x => {
       
+      val row = x._1
       /*
        * The label is a denormalized value and is assigned to
        * each column specific dataset as well; this implies
@@ -123,10 +127,10 @@ class VectorModel(@transient sc:SparkContext) extends Serializable {
       val label = x._2.head._3
       val features = Array.fill[Double](size.value)(0)
       
-      val data = x._2.map(v => (v._2.toInt,v._4.toDouble)).toSeq.sortBy(v => v._1)
+      val data = x._2.map(v => (v._2.toInt,v._4)).toSeq.sortBy(v => v._1)
       data.foreach(x => features(x._1) = x._2)
       
-      new LabeledPoint(label,features)
+      new LabeledPoint(row,label,features)
       
     })
  

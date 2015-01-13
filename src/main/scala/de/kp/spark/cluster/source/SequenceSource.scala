@@ -18,7 +18,6 @@ package de.kp.spark.cluster.source
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
 import de.kp.spark.core.Names
@@ -26,7 +25,7 @@ import de.kp.spark.core.Names
 import de.kp.spark.core.model._
 import de.kp.spark.core.source._
 
-import de.kp.spark.cluster.Configuration
+import de.kp.spark.cluster.RequestContext
 import de.kp.spark.cluster.model._
 
 import de.kp.spark.cluster.spec.Sequences
@@ -36,12 +35,11 @@ import de.kp.spark.cluster.spec.Sequences
  * different physical data sources to retrieve a sequence
  * database
  */
-class SequenceSource (@transient sc:SparkContext) {
+class SequenceSource (@transient ctx:RequestContext) {
 
-  private val config = Configuration
-  private val base = config.input(1)
+  private val base = ctx.config.input(0)
   
-  private val model = new SequenceModel(sc)
+  private val model = new SequenceModel(ctx)
   
   def get(req:ServiceRequest):RDD[NumberedSequence] = {
     
@@ -55,7 +53,7 @@ class SequenceSource (@transient sc:SparkContext) {
        */    
       case Sources.ELASTIC => {
         
-        val rawset = new ElasticSource(sc).connect(config,req)
+        val rawset = new ElasticSource(ctx.sc).connect(ctx.config,req)
         model.buildElastic(req,rawset)
         
       }
@@ -68,7 +66,7 @@ class SequenceSource (@transient sc:SparkContext) {
        
         val store = String.format("""%s/%s/%s""",base,req.data(Names.REQ_NAME),req.data(Names.REQ_UID))
 
-        val rawset = new FileSource(sc).connect(store,req)
+        val rawset = new FileSource(ctx.sc).connect(store,req)
         model.buildFile(req,rawset)
         
       }
@@ -81,7 +79,7 @@ class SequenceSource (@transient sc:SparkContext) {
    
         val fields = Sequences.get(req).map(kv => kv._2).toList  
                 
-        val rawset = new JdbcSource(sc).connect(config,req,fields)
+        val rawset = new JdbcSource(ctx.sc).connect(ctx.config,req,fields)
         model.buildJDBC(req,rawset)
         
       }
@@ -94,7 +92,7 @@ class SequenceSource (@transient sc:SparkContext) {
        
         val store = String.format("""%s/%s/%s""",base,req.data(Names.REQ_NAME),req.data(Names.REQ_UID))
                 
-        val rawset = new ParquetSource(sc).connect(store,req)
+        val rawset = new ParquetSource(ctx.sc).connect(store,req)
         model.buildParquet(req,rawset)
         
       }

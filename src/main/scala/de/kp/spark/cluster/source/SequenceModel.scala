@@ -18,20 +18,21 @@ package de.kp.spark.cluster.source
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
 import de.kp.spark.core.Names
 import de.kp.spark.core.model._
 
+import de.kp.spark.cluster.RequestContext
+
 import de.kp.spark.cluster.model._
 import de.kp.spark.cluster.spec.Sequences
 
-class SequenceModel(@transient sc:SparkContext) extends Serializable {
+class SequenceModel(@transient ctx:RequestContext) extends Serializable {
   
   def buildElastic(req:ServiceRequest,rawset:RDD[Map[String,String]]):RDD[NumberedSequence] = {
 
-    val spec = sc.broadcast(Sequences.get(req))
+    val spec = ctx.sc.broadcast(Sequences.get(req))
     val dataset = rawset.map(data => {
       
       val site = data(spec.value(Names.SITE_FIELD))
@@ -76,7 +77,7 @@ class SequenceModel(@transient sc:SparkContext) extends Serializable {
       
     }).coalesce(1)
 
-    val ids = sc.parallelize(Range.Long(0,sequences.count,1),sequences.partitions.size)
+    val ids = ctx.sc.parallelize(Range.Long(0,sequences.count,1),sequences.partitions.size)
     val zip = sequences.zip(ids).map(valu => (valu._2.toInt,valu._1))
 
     zip.map(valu => {
@@ -105,7 +106,7 @@ class SequenceModel(@transient sc:SparkContext) extends Serializable {
   
   def buildJDBC(req:ServiceRequest,rawset:RDD[Map[String,Any]]):RDD[NumberedSequence] = {
 
-    val spec = sc.broadcast(Sequences.get(req))
+    val spec = ctx.sc.broadcast(Sequences.get(req))
     val dataset = rawset.map(data => {
       
       val site = data(spec.value(Names.SITE_FIELD)).asInstanceOf[String]
@@ -151,7 +152,7 @@ class SequenceModel(@transient sc:SparkContext) extends Serializable {
       
     }).coalesce(1)
 
-    val ids = sc.parallelize(Range.Long(0,sequences.count,1),sequences.partitions.size)
+    val ids = ctx.sc.parallelize(Range.Long(0,sequences.count,1),sequences.partitions.size)
     val zip = sequences.zip(ids).map(valu => (valu._2.toInt,valu._1))
 
     zip.map(valu => {
@@ -167,7 +168,7 @@ class SequenceModel(@transient sc:SparkContext) extends Serializable {
   
   def buildParquet(req:ServiceRequest,rawset:RDD[Map[String,Any]]):RDD[NumberedSequence] = {
 
-    val spec = sc.broadcast(Sequences.get(req))
+    val spec = ctx.sc.broadcast(Sequences.get(req))
     val dataset = rawset.map(data => {
       
       val site = data(spec.value(Names.SITE_FIELD)).asInstanceOf[String]
@@ -213,7 +214,7 @@ class SequenceModel(@transient sc:SparkContext) extends Serializable {
       
     }).coalesce(1)
 
-    val ids = sc.parallelize(Range.Long(0,sequences.count,1),sequences.partitions.size)
+    val ids = ctx.sc.parallelize(Range.Long(0,sequences.count,1),sequences.partitions.size)
     val zip = sequences.zip(ids).map(valu => (valu._2.toInt,valu._1))
 
     zip.map(valu => {

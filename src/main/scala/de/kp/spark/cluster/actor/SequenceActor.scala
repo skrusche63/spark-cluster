@@ -19,21 +19,19 @@ package de.kp.spark.cluster.actor
 */
 
 import java.util.Date
-
-import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
 import de.kp.spark.core.model._
 
-import de.kp.spark.cluster.{Configuration,SKMeans}
+import de.kp.spark.cluster.{RequestContext,SKMeans}
 import de.kp.spark.cluster.model._
 
 import de.kp.spark.cluster.source.SequenceSource
 import de.kp.spark.cluster.sink.RedisSink
 
-class SequenceActor(@transient val sc:SparkContext) extends BaseActor {
+class SequenceActor(@transient val ctx:RequestContext) extends BaseActor {
   
-  private val base = Configuration.matrix
+  private val base = ctx.config.matrix
 
   def receive = {
 
@@ -50,7 +48,7 @@ class SequenceActor(@transient val sc:SparkContext) extends BaseActor {
 
           cache.addStatus(req,ClusterStatus.STARTED)
           
-          val dataset = new SequenceSource(sc).get(req)          
+          val dataset = new SequenceSource(ctx).get(req)          
           findClusters(req,dataset,params)
 
         } catch {
@@ -106,7 +104,7 @@ class SequenceActor(@transient val sc:SparkContext) extends BaseActor {
     val now = new Date()
     val dir = base + "/skmeans-" + now.getTime().toString
     
-    SKMeans.save(sc,matrix,dir)
+    SKMeans.save(ctx.sc,matrix,dir)
     
     /* Put directory to RedisSink for later requests */
     new RedisSink().addMatrix(req,dir)

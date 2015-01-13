@@ -20,8 +20,6 @@ package de.kp.spark.cluster.api
 
 import java.util.Date
 
-import org.apache.spark.SparkContext
-
 import akka.actor.{ActorRef,ActorSystem,Props}
 import akka.pattern.ask
 
@@ -40,12 +38,12 @@ import scala.util.parsing.json._
 import de.kp.spark.core.model._
 import de.kp.spark.core.rest.RestService
 
-import de.kp.spark.cluster.Configuration
+import de.kp.spark.cluster.{Configuration,RequestContext => RequestCtx}
 
 import de.kp.spark.cluster.actor.ClusterMaster
 import de.kp.spark.cluster.model._
 
-class RestApi(host:String,port:Int,system:ActorSystem,@transient sc:SparkContext) extends HttpService with Directives {
+class RestApi(host:String,port:Int,system:ActorSystem,@transient requestCtx:RequestCtx) extends HttpService with Directives {
 
   implicit val ec:ExecutionContext = system.dispatcher  
   import de.kp.spark.core.rest.RestJsonSupport._
@@ -53,7 +51,7 @@ class RestApi(host:String,port:Int,system:ActorSystem,@transient sc:SparkContext
   override def actorRefFactory:ActorSystem = system
 
   val (duration,retries,time) = Configuration.actor   
-  val master = system.actorOf(Props(new ClusterMaster(sc)), name="similarity-master")
+  val master = system.actorOf(Props(new ClusterMaster(requestCtx)), name="similarity-master")
 
   private val service = "similarity"
     

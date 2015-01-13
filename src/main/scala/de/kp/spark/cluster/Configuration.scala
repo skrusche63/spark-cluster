@@ -59,11 +59,7 @@ object Configuration extends CoreConf {
   override def input:List[String] = {
   
     val cfg = config.getConfig("file")
-    
-    val feature = cfg.getString("feature")   
-    val sequence = cfg.getString("sequence")   
-   
-    List(feature,sequence)
+    List(cfg.getString("base"))
     
   }
 

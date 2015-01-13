@@ -21,9 +21,7 @@ package de.kp.spark.cluster.util
 import org.apache.spark.rdd.RDD
 
 import org.apache.spark.mllib.clustering.KMeans
-import org.apache.spark.mllib.linalg.Vectors
-
-import de.kp.spark.cluster.model.LabeledPoint
+import org.apache.spark.mllib.linalg.{Vector,Vectors}
 
 object Optimizer {
 
@@ -32,22 +30,22 @@ object Optimizer {
    * entropy of all cluster labels is minimal; note, that the entropy is 
    * an indicator for the homogenity of the cluster labels
    */ 
-  def optimizeByEntropy(data:RDD[LabeledPoint],range:Range,iterations:Int):Int = {
+  def optimizeByEntropy(data:RDD[(Long,String,Vector)],range:Range,iterations:Int):Int = {
    
     val scores = range.par.map(k => (k, clusterEntropy(data,k,iterations))).toList
     scores.sortBy(_._2).head._1
   
   }
   
-  def clusterEntropy(data: RDD[LabeledPoint],clusters:Int,iterations:Int):Double = {
+  def clusterEntropy(data:RDD[(Long,String,Vector)],clusters:Int,iterations:Int):Double = {
 
-    val vectors = data.map(point => Vectors.dense(point.features))
+    val vectors = data.map(_._3)
     val model = KMeans.train(vectors,clusters,iterations)
 
-    val entropies = data.map(point => {
+    val entropies = data.map(x => {
       
-      val cluster = model.predict(Vectors.dense(point.features))
-      (cluster,point.label)
+      val cluster = model.predict(x._3)
+      (cluster,x._2)
       
     }).groupBy(_._1).map(data => MathHelper.strEntropy(data._2.map(_._2))).collect()
 
@@ -59,7 +57,7 @@ object Optimizer {
    * Determine from a range of cluster numbers that number where the mean
    * distance between cluster points and their cluster centers is minimal
    */ 
-  def optimizeByDistance(data:RDD[LabeledPoint],range:Range,iterations:Int):Int = {
+  def optimizeByDistance(data:RDD[(Long,String,Vector)],range:Range,iterations:Int):Int = {
 
     val scores = range.par.map(k => (k, clusterDistance(data, k, iterations))).toList
     scores.sortBy(_._2).head._1
@@ -74,21 +72,21 @@ object Optimizer {
    * their centroids, given certain clustering parameters; the method may
    * be used to score clusters
    */
-  def clusterDistance(data: RDD[LabeledPoint], clusters:Int, iterations:Int):Double = {
+  def clusterDistance(data: RDD[(Long,String,Vector)], clusters:Int, iterations:Int):Double = {
     
-    val vectors = data.map(point => Vectors.dense(point.features))
+    val vectors = data.map(_._3)
     val model = KMeans.train(vectors,clusters,iterations)
     /**
      * Centroid: Vector that specifies the centre of a certain cluster
      */
     val centroids = model.clusterCenters
   
-    val distances = data.map(point => {
+    val distances = data.map(x => {
       
-      val cluster = model.predict(Vectors.dense(point.features))
+      val cluster = model.predict(x._3)
       val centroid = centroids(cluster)
       
-      distance(centroid.toArray,point.features)
+      distance(centroid.toArray,x._3.toArray)
       
     }).collect()
     

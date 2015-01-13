@@ -21,27 +21,64 @@ package de.kp.spark.cluster
 import org.apache.spark.rdd.RDD
 
 import org.apache.spark.mllib.clustering.KMeans
-import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.mllib.linalg.{Vector,Vectors}
 
 import de.kp.spark.cluster.model._
 import de.kp.spark.cluster.util.{MathHelper,Optimizer}
 
 class FKMeans extends Serializable {
+
+  /**
+   * This method specifies the interface for the EXPLICIT clustering approach
+   */
+  def find(data:RDD[LabeledPoint],k:Int,iterations:Int):(Array[Vector], RDD[(Int,Long)]) = {
+
+    /*
+     * STEP #1: Z-score normalization of training data and
+     * training of KMeans  model from these normalized data
+     */
+    val normdata = normalize(data)
+
+    val vectors = normdata.map(_._3)
+    val model = KMeans.train(vectors,k,iterations)
+    /*
+     * STEP #2: Determine centroids, i.e. feature description
+     * of the cluster centers, and assign cluster center to
+     * the training data
+     */
+    val centroids = model.clusterCenters
+    val clustered = normdata.map(x => {
+
+      val (row,label,vector) = x
+      
+      val cluster = model.predict(vector)
+      val centroid = centroids(cluster)
+      
+      (cluster,row)
+    
+    })
+    
+    (centroids,clustered)
   
-  def find(data:RDD[LabeledPoint],strategy:String="entropy",iterations:Int,top:Int):List[ClusteredPoint] = {
+  }
+  
+  /**
+   * This method specifies the interface for the IMPLICIT clustering approach
+   */
+  def find(data:RDD[LabeledPoint],top:Int,iterations:Int,strategy:String="entropy"):List[ClusteredPoint] = {
     
     val (k,normdata) = prepare(data,strategy,iterations)
     detect(normdata,k,iterations,top)
     
   }
   
-  def detect(normdata:RDD[LabeledPoint],k:Int,iterations:Int,top:Int):List[ClusteredPoint] = {
+  def detect(normdata:RDD[(Long,String,Vector)],k:Int,iterations:Int,top:Int):List[ClusteredPoint] = {
     
     val sc = normdata.context
     /*
      * STEP #1: Compute KMeans model
      */   
-    val vectors = normdata.map(point => Vectors.dense(point.features))
+    val vectors = normdata.map(_._3)
 
     val model = KMeans.train(vectors,k,iterations)
     val centroids = model.clusterCenters
@@ -50,14 +87,14 @@ class FKMeans extends Serializable {
      * STEP #2: Calculate the distances for all points from their clusters; 
      * outliers are those that have the farest distance
      */
-    val clusters = normdata.map(point => {
+    val clusters = normdata.map(x => {
       
-      val features = point.features
-      
-      val cluster = model.predict(Vectors.dense(features))
+      val cluster = model.predict(x._3)
       val centroid = centroids(cluster)
       
-      (cluster,Optimizer.distance(centroid.toArray,features),point)
+      val distance = Optimizer.distance(centroid.toArray,x._3.toArray)
+     
+      (cluster,distance,x)
       
     })
 
@@ -69,23 +106,19 @@ class FKMeans extends Serializable {
     val bctop = sc.broadcast(top)
     clusters.groupBy(_._1).flatMap(group => group._2.toList.sortBy(_._2).take(bctop.value)).map(data => {
     
-      val (cluster,distance,point) = data
-      new ClusteredPoint(cluster,distance,point)
+      val (cluster,distance,(row,label,vector)) = data
+      new ClusteredPoint(cluster,distance,LabeledPoint(row,label,vector.toArray))
       
     }).collect().toList
 
   }
 
-  def prepare(data:RDD[LabeledPoint],strategy:String="entropy",iterations:Int):(Int,RDD[LabeledPoint]) = {
+  def prepare(data:RDD[LabeledPoint],strategy:String="entropy",iterations:Int):(Int,RDD[(Long,String,Vector)]) = {
     
     /* 
      * STEP #1: Normalize data 
      */
-    val labels   = data.map(p => p.label)
-    val features = data.map(p => p.features)
-    
-    val normalized = MathHelper.normalize(features)    
-    val normdata = labels.zip(normalized).map(v => new LabeledPoint(v._1,v._2))
+    val normdata = normalize(data)
     
     /*
      * STEP #2: Find optimal number of clusters
@@ -104,6 +137,22 @@ class FKMeans extends Serializable {
     
     (k, normdata)
   
+  }
+  
+  private def normalize(data:RDD[LabeledPoint]):RDD[(Long,String,Vector)] = {
+    
+    val ds1 = data.map(x => (x.id,x.label))
+    val ds2 = data.map(p => p.features)
+    
+    val normalized = MathHelper.normalize(ds2)    
+    ds1.zip(normalized).map(v => {
+      
+      val (row,label) = v._1
+      val vector = Vectors.dense(v._2)
+      
+      (row,label,vector)
+      
+    }) 
   }
   
 }

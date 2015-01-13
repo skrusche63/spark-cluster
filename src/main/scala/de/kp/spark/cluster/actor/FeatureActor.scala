@@ -18,36 +18,50 @@ package de.kp.spark.cluster.actor
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-import org.apache.spark.SparkContext
+import org.apache.spark.SparkContext._
 import org.apache.spark.rdd.RDD
 
+import org.apache.spark.mllib.linalg.Vector
+
+import de.kp.spark.core.Names
 import de.kp.spark.core.model._
 
-import de.kp.spark.cluster.FKMeans
+import de.kp.spark.cluster.{FKMeans,RequestContext}
 import de.kp.spark.cluster.model._
 
 import de.kp.spark.cluster.source.VectorSource
 import de.kp.spark.cluster.sink.RedisSink
 
-class FeatureActor(@transient val sc:SparkContext) extends BaseActor {
+class FeatureActor(@transient val ctx:RequestContext) extends BaseActor {
+  
+  private val base = ctx.config.input(0)
+  import ctx.sqlc.createSchemaRDD
 
   def receive = {
 
     case req:ServiceRequest => {
       
-      val params = properties(req)
-
-      /* Send response to originator of request */
-      sender ! response(req, (params == null))
-
-      if (params != null) {
+      val origin = sender
+      val missing = try {
+        
+        validate(req)
+        false
+      
+      } catch {
+        case e:Exception => true
+        
+      }
+      if (missing == true)
+        origin ! response(req, missing)
+        
+      else {
  
         try {
 
-          cache.addStatus(req,ClusterStatus.STARTED)
+          cache.addStatus(req,ClusterStatus.TRAINING_STARTED)
           
-          val dataset = new VectorSource(sc).get(req)          
-          findClusters(req,dataset,params)
+          val dataset = new VectorSource(ctx).get(req)          
+          train(req,dataset)
 
         } catch {
           case e:Exception => cache.addStatus(req,ClusterStatus.FAILURE)          
@@ -68,36 +82,91 @@ class FeatureActor(@transient val sc:SparkContext) extends BaseActor {
     
   }
   
-  private def properties(req:ServiceRequest):(Int,Int,String) = {
+  private def validate(req:ServiceRequest) {
       
-    try {
-      
-      val top = req.data("top").asInstanceOf[Int]
-      val iter = req.data("iterations").asInstanceOf[Int]
-      
-      val strategy = req.data("strategy").asInstanceOf[String]
+    /*
+     * The Similarity Analysis engine supports two different approaches
+     * to clustering: a) explicit clustering, and b) implicit clustering
+     * 
+     * Explicit clustering means, that the number of clusters is explicitly
+     * defined by the request; in this case the number of clusters, 'k', and
+     * the number of iterations ,'iterations', must be provided.
+     * 
+     * Implicit clustering means, that the number of clusters are determined
+     * by an internal optimization algorithm; in this case the optimization
+     * strategy, 'strategy', must be provided, also the number, 'top', points
+     * that are nearest to their cluster centroids.
+     * 
+     * The requested approach must not be specified externally, but is inferred
+     * from the combination of the input parameters
+     */
+    if (req.data.contains("strategy") == true) {
+      /*
+       * Requests that specify an optimization strategy are considered
+       * as IMPLICIT clustering requests. In this case, we additionally
+       * expect a parameter 'top' and 'iterations'
+       */
+      if (req.data.contains("top") == false)
+        throw new Exception("Parameter 'top' is missing.")
         
-      return (top,iter,strategy)
+      if (req.data.contains("iterations") == false)
+        throw new Exception("Parameter 'iterations' is missing.")
+      
+    } else {
+      /*
+       * Requests that specify no optimization strategy are considered
+       * as EXPLICIT clustering requests. Here, we expect a parameter 
+       * 'k' to specify the number of clusters, and 'iterations'
+       */
+      if (req.data.contains("k") == false) 
+        throw new Exception("Parameter 'k' is missing.")
         
-    } catch {
-      case e:Exception => {
-         return null          
-      }
+      if (req.data.contains("iterations") == false)
+        throw new Exception("Parameter 'iterations' is missing.")
+          
     }
     
   }
   
-  private def findClusters(req:ServiceRequest,dataset:RDD[LabeledPoint],params:(Int,Int,String)) {
-   
-    cache.addStatus(req,ClusterStatus.DATASET)
-    
-    val (top,iter,strategy) = params   
+  private def train(req:ServiceRequest,dataset:RDD[LabeledPoint]) {
+
     /*
-     * Determine top k data points that are closest to their
-     * respective cluster centroids
+     * We distinguish between explicit and implicit clustering
      */
-    val clustered = new FKMeans().find(dataset,strategy,iter,top).toList
-    savePoints(req,new ClusteredPoints(clustered))
+    if (req.data.contains("strategy")) {
+      
+      /********** IMPLICIT **********/
+      
+      val strategy = req.data("strategy")
+
+      val top = req.data("top").toInt
+      val iter = req.data("iterations").toInt
+      /*
+       * Determine top k data points that are closest to their
+       * respective cluster centroids
+       */
+      val clustered = new FKMeans().find(dataset,top,iter,strategy).toList
+      savePoints(req,new ClusteredPoints(clustered))
+    
+    } else {
+      
+      /********** EXPLICIT **********/
+      
+      val k = req.data("k").toInt
+      val iter = req.data("iterations").toInt
+      /*
+       * Determine the controids and assign the respective cluster
+       * centers to the dataset provided; the result of the FKMeans
+       * mechanism is an RDD with a (cluster,row) assignment
+       */
+      val (centroids,clustered) = new FKMeans().find(dataset,k,iter)
+      /*
+       * Save centroids and clustered dataset as Parquet files
+       */
+      saveCentroids(req,centroids)
+      saveClustered(req,clustered)
+      
+    }
     
     /* Update cache */
     cache.addStatus(req,ClusterStatus.TRAINING_FINISHED)
@@ -105,6 +174,27 @@ class FeatureActor(@transient val sc:SparkContext) extends BaseActor {
     /* Notify potential listeners */
     notify(req,ClusterStatus.TRAINING_FINISHED)
     
+  }
+  
+  private def saveCentroids(req:ServiceRequest,centroids:Array[Vector]) {
+             
+    val store = String.format("""%s/%s/%s/out/cluster""",base,req.data(Names.REQ_NAME),req.data(Names.REQ_UID))
+    val table = ctx.sc.parallelize(centroids.zipWithIndex.map(x => {
+      
+      val (vector,cluster) = x
+      (cluster,vector.toArray.toSeq)
+        
+    }))
+    
+    table.saveAsParquetFile(store)  
+  
+  }
+  
+  private def saveClustered(req:ServiceRequest,dataset:RDD[(Int,Long)]) {
+    
+    val store = String.format("""%s/%s/%s/out/data""",base,req.data(Names.REQ_NAME),req.data(Names.REQ_UID))
+    dataset.saveAsParquetFile(store)  
+
   }
   
   private def savePoints(req:ServiceRequest,points:ClusteredPoints) {

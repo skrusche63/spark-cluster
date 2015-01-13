@@ -18,15 +18,14 @@ package de.kp.spark.cluster.actor
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-import org.apache.spark.SparkContext
 import akka.actor.{ActorRef,Props}
 
 import de.kp.spark.core.actor._
 import de.kp.spark.core.model._
 
-import de.kp.spark.cluster.Configuration
+import de.kp.spark.cluster.RequestContext
 
-class ClusterMaster(@transient sc:SparkContext) extends BaseMaster(Configuration) {
+class ClusterMaster(@transient ctx:RequestContext) extends BaseMaster(ctx.config) {
   
   override def actor(worker:String):ActorRef = {
     
@@ -35,16 +34,16 @@ class ClusterMaster(@transient sc:SparkContext) extends BaseMaster(Configuration
        * Metadata management is part of the core functionality; field or metadata
        * specifications can be registered in, and retrieved from a Redis database.
        */
-      case "fields"   => context.actorOf(Props(new FieldQuestor(Configuration)))
-      case "register" => context.actorOf(Props(new BaseRegistrar(Configuration)))        
+      case "fields"   => context.actorOf(Props(new FieldQuestor(ctx.config)))
+      case "register" => context.actorOf(Props(new BaseRegistrar(ctx.config)))        
       /*
        * Index management is part of the core functionality; an Elasticsearch 
        * index can be created and appropriate (tracked) items can be saved.
        */  
-      case "index" => context.actorOf(Props(new BaseIndexer(Configuration)))
-      case "track" => context.actorOf(Props(new BaseTracker(Configuration)))
+      case "index" => context.actorOf(Props(new BaseIndexer(ctx.config)))
+      case "track" => context.actorOf(Props(new BaseTracker(ctx.config)))
 
-      case "params" => context.actorOf(Props(new ParamQuestor(Configuration)))
+      case "params" => context.actorOf(Props(new ParamQuestor(ctx.config)))
       /*
        * Request the actual status of an association rule mining 
        * task; note, that get requests should only be invoked after 
@@ -52,10 +51,10 @@ class ClusterMaster(@transient sc:SparkContext) extends BaseMaster(Configuration
        * 
        * Status management is part of the core functionality.
        */
-      case "status" => context.actorOf(Props(new StatusQuestor(Configuration)))
+      case "status" => context.actorOf(Props(new StatusQuestor(ctx.config)))
 
       case "get"   => context.actorOf(Props(new ClusterQuestor()))
-      case "train" => context.actorOf(Props(new ClusterBuilder(sc)))       
+      case "train" => context.actorOf(Props(new ClusterBuilder(ctx)))       
      
       case _ => null
       

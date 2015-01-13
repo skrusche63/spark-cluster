@@ -24,9 +24,17 @@ import org.json4s.native.Serialization
 import org.json4s.native.Serialization.{read,write}
 
 import de.kp.spark.core.model._
-
+/**
+ * A LabeledPoint describes a combination of a feature
+ * vector and an assigned label. Each data record is
+ * also uniquely identifier by the 'id' parameter.
+ * 
+ * This parameter is usually equal to the row descriptor
+ * of the data record (see vector description).
+ * 
+ */
 case class LabeledPoint(
-  label:String,features:Array[Double]
+  id:Long,label:String,features:Array[Double]
 )
 
 case class ClusteredPoint(

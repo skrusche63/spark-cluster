@@ -18,14 +18,14 @@ package de.kp.spark.cluster.api
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-import org.apache.spark.SparkContext
 import akka.actor.{ActorSystem,Props}
 
+import de.kp.spark.cluster.RequestContext
 import de.kp.spark.cluster.actor.ClusterMaster
 
-class AkkaApi(system:ActorSystem,@transient val sc:SparkContext) {
+class AkkaApi(system:ActorSystem,@transient val ctx:RequestContext) {
 
-  val master = system.actorOf(Props(new ClusterMaster(sc)), name="similarity-master")
+  val master = system.actorOf(Props(new ClusterMaster(ctx)), name="similarity-master")
 
   def start() {
      while (true) {}   

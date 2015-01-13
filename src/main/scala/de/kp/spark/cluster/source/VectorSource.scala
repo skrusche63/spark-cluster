@@ -18,7 +18,6 @@ package de.kp.spark.cluster.source
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
 import de.kp.spark.core.Names
@@ -26,7 +25,7 @@ import de.kp.spark.core.Names
 import de.kp.spark.core.model._
 import de.kp.spark.core.source._
 
-import de.kp.spark.cluster.Configuration
+import de.kp.spark.cluster.RequestContext
 import de.kp.spark.cluster.model._
 
 import de.kp.spark.cluster.spec.Features
@@ -35,12 +34,10 @@ import de.kp.spark.cluster.spec.Features
  * VectorSource is an abstraction layer on top the physical 
  * data sources supported by KMeans outlier detection
  */
-class VectorSource(@transient sc:SparkContext) {
+class VectorSource(@transient ctx:RequestContext) {
 
-  private val config = Configuration
-  private val base = config.input(0)
-  
-  private val model = new VectorModel(sc)
+  private val base = ctx.config.input(0)  
+  private val model = new VectorModel(ctx)
   
   def get(req:ServiceRequest):RDD[LabeledPoint] = {
    
@@ -54,7 +51,7 @@ class VectorSource(@transient sc:SparkContext) {
        */    
       case Sources.ELASTIC => {
         
-        val rawset = new ElasticSource(sc).connect(config,req)
+        val rawset = new ElasticSource(ctx.sc).connect(ctx.config,req)
         model.buildElastic(req,rawset)
         
       }
@@ -67,7 +64,7 @@ class VectorSource(@transient sc:SparkContext) {
        
         val store = String.format("""%s/%s/%s""",base,req.data(Names.REQ_NAME),req.data(Names.REQ_UID))
          
-        val rawset = new FileSource(sc).connect(store,req)        
+        val rawset = new FileSource(ctx.sc).connect(store,req)        
         model.buildFile(req,rawset)
         
       }
@@ -80,7 +77,7 @@ class VectorSource(@transient sc:SparkContext) {
     
         val fields = Features.get(req).map(kv => kv._2).toList  
         
-        val rawset = new JdbcSource(sc).connect(config,req,fields)
+        val rawset = new JdbcSource(ctx.sc).connect(ctx.config,req,fields)
         model.buildJDBC(req,rawset)
         
       }
@@ -92,7 +89,7 @@ class VectorSource(@transient sc:SparkContext) {
        
         val store = String.format("""%s/%s/%s""",base,req.data(Names.REQ_NAME),req.data(Names.REQ_UID))
         
-        val rawset = new ParquetSource(sc).connect(store,req)
+        val rawset = new ParquetSource(ctx.sc).connect(store,req)
         model.buildParquet(req,rawset)
         
       }
