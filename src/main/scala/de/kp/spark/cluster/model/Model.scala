@@ -37,6 +37,10 @@ case class LabeledPoint(
   id:Long,label:String,features:Array[Double]
 )
 
+case class ParquetCentroid(cluster:Int,features:Seq[Double])
+
+case class ParquetClustered(cluster:Int,row:Long,distance:Double)
+
 case class ClusteredPoint(
   cluster:Int,distance:Double,point:LabeledPoint
 )

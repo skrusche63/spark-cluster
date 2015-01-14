@@ -178,11 +178,11 @@ class FeatureActor(@transient val ctx:RequestContext) extends BaseActor {
   
   private def saveCentroids(req:ServiceRequest,centroids:Array[Vector]) {
              
-    val store = String.format("""%s/%s/%s/out/cluster""",base,req.data(Names.REQ_NAME),req.data(Names.REQ_UID))
+    val store = String.format("""%s/%s/%s/SAE/1""",base,req.data(Names.REQ_NAME),req.data(Names.REQ_UID))
     val table = ctx.sc.parallelize(centroids.zipWithIndex.map(x => {
       
       val (vector,cluster) = x
-      (cluster,vector.toArray.toSeq)
+      ParquetCentroid(cluster,vector.toArray.toSeq)
         
     }))
     
@@ -190,10 +190,12 @@ class FeatureActor(@transient val ctx:RequestContext) extends BaseActor {
   
   }
   
-  private def saveClustered(req:ServiceRequest,dataset:RDD[(Int,Long)]) {
+  private def saveClustered(req:ServiceRequest,dataset:RDD[(Int,Long,Double)]) {
     
-    val store = String.format("""%s/%s/%s/out/data""",base,req.data(Names.REQ_NAME),req.data(Names.REQ_UID))
-    dataset.saveAsParquetFile(store)  
+    val store = String.format("""%s/%s/%s/SAE/2""",base,req.data(Names.REQ_NAME),req.data(Names.REQ_UID))
+    val table = dataset.map(x => ParquetClustered(x._1,x._2,x._3))
+    
+    table.saveAsParquetFile(store)  
 
   }
   

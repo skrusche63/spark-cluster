@@ -31,7 +31,7 @@ class FKMeans extends Serializable {
   /**
    * This method specifies the interface for the EXPLICIT clustering approach
    */
-  def find(data:RDD[LabeledPoint],k:Int,iterations:Int):(Array[Vector], RDD[(Int,Long)]) = {
+  def find(data:RDD[LabeledPoint],k:Int,iterations:Int):(Array[Vector], RDD[(Int,Long,Double)]) = {
 
     /*
      * STEP #1: Z-score normalization of training data and
@@ -54,7 +54,9 @@ class FKMeans extends Serializable {
       val cluster = model.predict(vector)
       val centroid = centroids(cluster)
       
-      (cluster,row)
+      val distance = Optimizer.distance(centroid.toArray,vector.toArray)
+      
+      (cluster,row,distance)
     
     })
     
