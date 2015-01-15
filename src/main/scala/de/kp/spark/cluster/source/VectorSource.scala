@@ -36,7 +36,6 @@ import de.kp.spark.cluster.spec.Features
  */
 class VectorSource(@transient ctx:RequestContext) {
 
-  private val base = ctx.config.input(0)  
   private val model = new VectorModel(ctx)
   
   def get(req:ServiceRequest):RDD[LabeledPoint] = {
@@ -62,7 +61,7 @@ class VectorSource(@transient ctx:RequestContext) {
        */    
       case Sources.FILE => {
        
-        val store = String.format("""%s/%s/%s""",base,req.data(Names.REQ_NAME),req.data(Names.REQ_UID))
+        val store = req.data(Names.REQ_URL)
          
         val rawset = new FileSource(ctx.sc).connect(store,req)        
         model.buildFile(req,rawset)
@@ -87,7 +86,7 @@ class VectorSource(@transient ctx:RequestContext) {
        */
       case Sources.PARQUET => {
        
-        val store = String.format("""%s/%s/%s""",base,req.data(Names.REQ_NAME),req.data(Names.REQ_UID))
+        val store = req.data(Names.REQ_URL)
         
         val rawset = new ParquetSource(ctx.sc).connect(store,req)
         model.buildParquet(req,rawset)

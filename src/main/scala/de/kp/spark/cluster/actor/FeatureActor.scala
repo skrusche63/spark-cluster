@@ -34,9 +34,7 @@ import de.kp.spark.cluster.sink.RedisSink
 
 class FeatureActor(@transient val ctx:RequestContext) extends BaseActor {
   
-  private val base = ctx.config.input(0)
   import ctx.sqlc.createSchemaRDD
-
   def receive = {
 
     case req:ServiceRequest => {
@@ -177,8 +175,16 @@ class FeatureActor(@transient val ctx:RequestContext) extends BaseActor {
   }
   
   private def saveCentroids(req:ServiceRequest,centroids:Array[Vector]) {
-             
-    val store = String.format("""%s/%s/%s/SAE/1""",base,req.data(Names.REQ_NAME),req.data(Names.REQ_UID))
+    
+    /* url = e.g.../part1/part2/part3/1 */
+    val url = req.data(Names.REQ_URL)
+   
+    val pos = url.lastIndexOf('/')
+    
+    val base = url.substring(0, pos)
+    val step = url.substring(pos+1).toInt + 1
+    
+    val store = base + "/" + (step + 1)
     val table = ctx.sc.parallelize(centroids.zipWithIndex.map(x => {
       
       val (vector,cluster) = x
@@ -192,7 +198,15 @@ class FeatureActor(@transient val ctx:RequestContext) extends BaseActor {
   
   private def saveClustered(req:ServiceRequest,dataset:RDD[(Int,Long,Double)]) {
     
-    val store = String.format("""%s/%s/%s/SAE/2""",base,req.data(Names.REQ_NAME),req.data(Names.REQ_UID))
+    /* url = e.g.../part1/part2/part3/1 */
+    val url = req.data(Names.REQ_URL)
+   
+    val pos = url.lastIndexOf('/')
+    
+    val base = url.substring(0, pos)
+    val step = url.substring(pos+1).toInt + 2
+    
+    val store = base + "/" + (step + 1)
     val table = dataset.map(x => ParquetClustered(x._1,x._2,x._3))
     
     table.saveAsParquetFile(store)  
