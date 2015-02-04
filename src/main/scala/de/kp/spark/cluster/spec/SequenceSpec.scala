@@ -21,19 +21,20 @@ package de.kp.spark.cluster.spec
 import de.kp.spark.core.model._
 import de.kp.spark.core.redis.RedisCache
 
+import de.kp.spark.core.spec.Fields
 import de.kp.spark.cluster.Configuration
 
 import scala.xml._
 import scala.collection.mutable.HashMap
 
-object Sequences {
+object SequenceSpec extends Fields {
   
   val path = "sequences.xml"
 
   val (host,port) = Configuration.redis
   val cache = new RedisCache(host,port.toInt)
 
-  def get(req:ServiceRequest):Map[String,String] = {
+  override def get(req:ServiceRequest):Map[String,String] = {
 
     val fields = HashMap.empty[String,String]
   

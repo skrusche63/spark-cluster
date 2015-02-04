@@ -23,6 +23,8 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.mllib.clustering.KMeans
 import org.apache.spark.mllib.linalg.{Vector,Vectors}
 
+import de.kp.spark.core.model._
+
 import de.kp.spark.cluster.model._
 import de.kp.spark.cluster.util.{MathHelper,Optimizer}
 

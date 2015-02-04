@@ -26,11 +26,14 @@ import org.apache.spark.mllib.linalg.Vector
 import de.kp.spark.core.Names
 import de.kp.spark.core.model._
 
+import de.kp.spark.core.source.VectorSource
+import de.kp.spark.core.source.handler.VectorHandler
+
 import de.kp.spark.cluster.{FKMeans,RequestContext}
 import de.kp.spark.cluster.model._
 
-import de.kp.spark.cluster.source.VectorSource
 import de.kp.spark.cluster.sink.RedisSink
+import de.kp.spark.cluster.spec.FeatureSpec
 
 class FeatureActor(@transient val ctx:RequestContext) extends BaseActor {
   
@@ -58,7 +61,9 @@ class FeatureActor(@transient val ctx:RequestContext) extends BaseActor {
 
           cache.addStatus(req,ClusterStatus.TRAINING_STARTED)
           
-          val dataset = new VectorSource(ctx).get(req)          
+          val source = new VectorSource(ctx.sc,ctx.config,FeatureSpec)
+          val dataset = VectorHandler.vector2LabeledPoints(source.connect(req))
+          
           train(req,dataset)
 
         } catch {

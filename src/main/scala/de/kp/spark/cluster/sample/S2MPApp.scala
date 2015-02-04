@@ -3,7 +3,7 @@ package de.kp.spark.cluster.sample
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 
-import de.kp.spark.cluster.model._
+import de.kp.spark.core.model._
 import de.kp.spark.cluster.SKMeans
 
 object S2MPApp extends SparkApp {

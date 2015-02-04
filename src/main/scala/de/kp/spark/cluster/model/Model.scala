@@ -24,18 +24,6 @@ import org.json4s.native.Serialization
 import org.json4s.native.Serialization.{read,write}
 
 import de.kp.spark.core.model._
-/**
- * A LabeledPoint describes a combination of a feature
- * vector and an assigned label. Each data record is
- * also uniquely identifier by the 'id' parameter.
- * 
- * This parameter is usually equal to the row descriptor
- * of the data record (see vector description).
- * 
- */
-case class LabeledPoint(
-  id:Long,label:String,features:Array[Double]
-)
 
 case class ParquetCentroid(cluster:Int,features:Seq[Double])
 
@@ -46,8 +34,6 @@ case class ClusteredPoint(
 )
 
 case class ClusteredPoints(items:List[ClusteredPoint])
-
-case class NumberedSequence(sid:Int,data:Array[Array[Int]])
 
 case class ClusteredSequence(
   cluster:Int,similarity:Double,sequence:NumberedSequence
@@ -73,20 +59,6 @@ object Algorithms {
   private def algorithms = List(KMEANS,SKMEANS)
   
   def isAlgorithm(algorithm:String):Boolean = algorithms.contains(algorithm)
-  
-}
-
-object Sources {
-  /* The names of the data source actually supported */
-  val FILE:String    = "FILE"
-  val ELASTIC:String = "ELASTIC" 
-  val JDBC:String    = "JDBC"    
-  val PARQUET:String = "PARQUET"
-  val PIWIK:String   = "PIWIK"  
-    
-  private val sources = List(FILE,ELASTIC,JDBC,PARQUET,PIWIK)
-  
-  def isSource(source:String):Boolean = sources.contains(source)
   
 }
 

@@ -23,10 +23,14 @@ import org.apache.spark.rdd.RDD
 
 import de.kp.spark.core.model._
 
+import de.kp.spark.core.source.SequenceSource
+import de.kp.spark.core.source.handler.SequenceHandler
+
 import de.kp.spark.cluster.{RequestContext,SKMeans}
+import de.kp.spark.cluster.spec.SequenceSpec
+
 import de.kp.spark.cluster.model._
 
-import de.kp.spark.cluster.source.SequenceSource
 import de.kp.spark.cluster.sink.RedisSink
 
 class SequenceActor(@transient val ctx:RequestContext) extends BaseActor {
@@ -48,7 +52,9 @@ class SequenceActor(@transient val ctx:RequestContext) extends BaseActor {
 
           cache.addStatus(req,ClusterStatus.STARTED)
           
-          val dataset = new SequenceSource(ctx).get(req)          
+          val source = new SequenceSource(ctx.sc,ctx.config,SequenceSpec)
+          val dataset = SequenceHandler.sequence2NumSeq(source.connect(req))
+          
           findClusters(req,dataset,params)
 
         } catch {

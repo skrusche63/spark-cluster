@@ -21,12 +21,13 @@ package de.kp.spark.cluster.spec
 import de.kp.spark.core.model._
 import de.kp.spark.core.redis.RedisCache
 
+import de.kp.spark.core.spec.Fields
 import de.kp.spark.cluster.Configuration
 
 import scala.xml._
 import scala.collection.mutable.HashMap
 
-object Features extends Serializable {
+object FeatureSpec extends Fields {
   
   val path = "features.xml"
 
