@@ -69,8 +69,16 @@ object Configuration extends CoreConf {
     cfg.getString("path")   
     
   }
-  
-  override def output:List[String] = null
+ 
+  override def mongo:HConf = {
+   
+    val cfg = config.getConfig("mongo")
+    val conf = new HConf()                          
+
+    conf.set("mongo.input.uri",cfg.getString("mongo.input.uri"))
+    conf
+     
+  }
   
   override def mysql:(String,String,String,String) = {
 
@@ -85,6 +93,8 @@ object Configuration extends CoreConf {
    (url,db,user,password)
    
   }
+  
+  override def output:List[String] = null
   
   override def redis:(String,String) = {
   
