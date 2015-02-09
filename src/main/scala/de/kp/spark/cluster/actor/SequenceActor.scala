@@ -52,7 +52,7 @@ class SequenceActor(@transient val ctx:RequestContext) extends BaseActor {
 
           cache.addStatus(req,ClusterStatus.STARTED)
           
-          val source = new SequenceSource(ctx.sc,ctx.config,SequenceSpec)
+          val source = new SequenceSource(ctx.sc,ctx.config,new SequenceSpec(req))
           val dataset = SequenceHandler.sequence2NumSeq(source.connect(req))
           
           findClusters(req,dataset,params)

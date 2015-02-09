@@ -61,7 +61,7 @@ class FeatureActor(@transient val ctx:RequestContext) extends BaseActor {
 
           cache.addStatus(req,ClusterStatus.TRAINING_STARTED)
           
-          val source = new VectorSource(ctx.sc,ctx.config,FeatureSpec)
+          val source = new VectorSource(ctx.sc,ctx.config,new FeatureSpec(req))
           val dataset = VectorHandler.vector2LabeledPoints(source.connect(req))
           
           train(req,dataset)
