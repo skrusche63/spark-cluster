@@ -103,7 +103,7 @@ class FeatureActor(@transient val ctx:RequestContext) extends BaseActor {
      * The requested approach must not be specified externally, but is inferred
      * from the combination of the input parameters
      */
-    if (req.data.contains("strategy") == true) {
+    if (req.data.contains("strategy") == true && req.data("strategy") != "") {
       /*
        * Requests that specify an optimization strategy are considered
        * as IMPLICIT clustering requests. In this case, we additionally
@@ -136,7 +136,7 @@ class FeatureActor(@transient val ctx:RequestContext) extends BaseActor {
     /*
      * We distinguish between explicit and implicit clustering
      */
-    if (req.data.contains("strategy")) {
+    if (req.data.contains("strategy") == true && req.data("strategy") != "") {
       
       /********** IMPLICIT **********/
       

@@ -35,9 +35,10 @@ class FKMeans extends Serializable {
    */
   def find(data:RDD[LabeledPoint],k:Int,iterations:Int):(Array[Vector], RDD[(Int,Long,Double)]) = {
 
+    val sc = data.context
     /*
      * STEP #1: Z-score normalization of training data and
-     * training of KMeans  model from these normalized data
+     * training of KMeans model from these normalized data
      */
     val normdata = normalize(data)
 
@@ -46,23 +47,22 @@ class FKMeans extends Serializable {
     /*
      * STEP #2: Determine centroids, i.e. feature description
      * of the cluster centers, and assign cluster center to
-     * the training data
+     * the training data. Broadcasting the KMeans model trained
+     * above is a means to improve performance
      */
-    val centroids = model.clusterCenters
-    val clustered = normdata.map(x => {
+    val bcmodel = sc.broadcast(model)
+    val clustered = normdata.map{case(row,label,vector) => {
+      
+      val cluster = bcmodel.value.predict(vector)
 
-      val (row,label,vector) = x
-      
-      val cluster = model.predict(vector)
-      val centroid = centroids(cluster)
-      
+      val centroid = bcmodel.value.clusterCenters(cluster)
       val distance = Optimizer.distance(centroid.toArray,vector.toArray)
       
       (cluster,row,distance)
     
-    })
+    }}
     
-    (centroids,clustered)
+    (model.clusterCenters,clustered)
   
   }
   
@@ -85,22 +85,22 @@ class FKMeans extends Serializable {
     val vectors = normdata.map(_._3)
 
     val model = KMeans.train(vectors,k,iterations)
-    val centroids = model.clusterCenters
 
     /*
      * STEP #2: Calculate the distances for all points from their clusters; 
      * outliers are those that have the farest distance
      */
-    val clusters = normdata.map(x => {
+    val bcmodel = sc.broadcast(model)
+    val clusters = normdata.map{case(row,label,vector) => {
       
-      val cluster = model.predict(x._3)
-      val centroid = centroids(cluster)
+      val cluster = bcmodel.value.predict(vector)
+      val centroid = bcmodel.value.clusterCenters(cluster)
       
-      val distance = Optimizer.distance(centroid.toArray,x._3.toArray)
+      val distance = Optimizer.distance(centroid.toArray,vector.toArray)
      
-      (cluster,distance,x)
+      (cluster,distance,(row,label,vector))
       
-    })
+    }}
 
     /*
      * Retrieve top k features (LabeledPoint) with respect to their clusters;

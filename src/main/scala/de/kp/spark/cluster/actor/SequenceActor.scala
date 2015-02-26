@@ -50,7 +50,7 @@ class SequenceActor(@transient val ctx:RequestContext) extends BaseActor {
  
         try {
 
-          cache.addStatus(req,ClusterStatus.STARTED)
+          cache.addStatus(req,ClusterStatus.TRAINING_STARTED)
           
           val source = new SequenceSource(ctx.sc,ctx.config,new SequenceSpec(req))
           val dataset = SequenceHandler.sequence2NumSeq(source.connect(req))
@@ -83,7 +83,7 @@ class SequenceActor(@transient val ctx:RequestContext) extends BaseActor {
       val k = req.data("k").asInstanceOf[Int]
       val top = req.data("top").asInstanceOf[Int]
       
-      val iter = req.data("interations").asInstanceOf[Int]
+      val iter = req.data("iterations").asInstanceOf[Int]
         
       return (top,k,iter)
         
@@ -126,10 +126,10 @@ class SequenceActor(@transient val ctx:RequestContext) extends BaseActor {
     saveSequences(req,new ClusteredSequences(clustered))
           
     /* Update cache */
-    cache.addStatus(req,ClusterStatus.FINISHED)
+    cache.addStatus(req,ClusterStatus.TRAINING_FINISHED)
     
     /* Notify potential listeners */
-    notify(req,ClusterStatus.FINISHED)
+    notify(req,ClusterStatus.TRAINING_FINISHED)
     
   }
   
