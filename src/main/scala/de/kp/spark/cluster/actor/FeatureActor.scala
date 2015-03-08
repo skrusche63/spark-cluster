@@ -35,6 +35,8 @@ import de.kp.spark.cluster.model._
 import de.kp.spark.cluster.sink.RedisSink
 import de.kp.spark.cluster.spec.FeatureSpec
 
+import scala.collection.mutable.ArrayBuffer
+
 class FeatureActor(@transient ctx:RequestContext) extends TrainActor(ctx) {
   
   import ctx.sqlc.createSchemaRDD
@@ -97,10 +99,19 @@ class FeatureActor(@transient ctx:RequestContext) extends TrainActor(ctx) {
       
       /********** IMPLICIT **********/
       
+      val params = ArrayBuffer.empty[Param]
+      
       val strategy = req.data("strategy")
+      params += Param("strategy","string",strategy)
 
       val top = req.data("top").toInt
+      params += Param("top","integer",top.toString)
+
       val iter = req.data("iterations").toInt
+      params += Param("iterations","integer",iter.toString)
+
+      cache.addParams(req, params.toList)
+      
       /*
        * Determine top k data points that are closest to their
        * respective cluster centroids
@@ -112,8 +123,15 @@ class FeatureActor(@transient ctx:RequestContext) extends TrainActor(ctx) {
       
       /********** EXPLICIT **********/
       
+      val params = ArrayBuffer.empty[Param]
+      
       val k = req.data("k").toInt
+      params += Param("k","integer",k.toString)
+
       val iter = req.data("iterations").toInt
+      params += Param("iterations","integer",iter.toString)
+
+      cache.addParams(req, params.toList)
       /*
        * Determine the controids and assign the respective cluster
        * centers to the dataset provided; the result of the FKMeans

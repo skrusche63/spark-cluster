@@ -32,6 +32,8 @@ import de.kp.spark.cluster.spec.SequenceSpec
 import de.kp.spark.cluster.model._
 import de.kp.spark.cluster.sink.RedisSink
 
+import scala.collection.mutable.ArrayBuffer
+
 class SequenceActor(@transient ctx:RequestContext) extends TrainActor(ctx) {
   
   private val base = ctx.config.matrix
@@ -74,10 +76,18 @@ class SequenceActor(@transient ctx:RequestContext) extends TrainActor(ctx) {
      * STEP #3: Detect top similiar sequences with respect
      * to their cluster centroids
      */         
+    val params = ArrayBuffer.empty[Param]
+    
     val k = req.data("k").asInstanceOf[Int]
+    params += Param("k","integer",k.toString)
+
     val top = req.data("top").asInstanceOf[Int]
+    params += Param("top","integer",top.toString)
       
     val iterations = req.data("iterations").asInstanceOf[Int]
+    params += Param("iterations","integer",iterations.toString)
+
+    cache.addParams(req, params.toList)
     
     val clustered = SKMeans.detect(dataset,iterations,k,top,dir)
     saveSequences(req,new ClusteredSequences(clustered))
