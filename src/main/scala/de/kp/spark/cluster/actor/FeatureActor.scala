@@ -35,57 +35,11 @@ import de.kp.spark.cluster.model._
 import de.kp.spark.cluster.sink.RedisSink
 import de.kp.spark.cluster.spec.FeatureSpec
 
-class FeatureActor(@transient val ctx:RequestContext) extends BaseActor {
+class FeatureActor(@transient ctx:RequestContext) extends TrainActor(ctx) {
   
   import ctx.sqlc.createSchemaRDD
-  def receive = {
-
-    case req:ServiceRequest => {
-      
-      val origin = sender
-      val missing = try {
-        
-        validate(req)
-        false
-      
-      } catch {
-        case e:Exception => true
-        
-      }
-      if (missing == true)
-        origin ! response(req, missing)
-        
-      else {
- 
-        try {
-
-          cache.addStatus(req,ClusterStatus.TRAINING_STARTED)
-          
-          val source = new VectorSource(ctx.sc,ctx.config,new FeatureSpec(req))
-          val dataset = VectorHandler.vector2LabeledPoints(source.connect(req))
-          
-          train(req,dataset)
-
-        } catch {
-          case e:Exception => cache.addStatus(req,ClusterStatus.FAILURE)          
-        }
-
-      }
-      
-      context.stop(self)
-          
-    }
-    
-    case _ => {
-      
-      log.error("unknown request.")
-      context.stop(self)
-      
-    }
-    
-  }
   
-  private def validate(req:ServiceRequest) {
+  override def validate(req:ServiceRequest) {
       
     /*
      * The Similarity Analysis engine supports two different approaches
@@ -131,7 +85,10 @@ class FeatureActor(@transient val ctx:RequestContext) extends BaseActor {
     
   }
   
-  private def train(req:ServiceRequest,dataset:RDD[LabeledPoint]) {
+  override def train(req:ServiceRequest) {
+          
+    val source = new VectorSource(ctx.sc,ctx.config,new FeatureSpec(req))
+    val dataset = VectorHandler.vector2LabeledPoints(source.connect(req))
 
     /*
      * We distinguish between explicit and implicit clustering
@@ -170,12 +127,6 @@ class FeatureActor(@transient val ctx:RequestContext) extends BaseActor {
       saveClustered(req,clustered)
       
     }
-    
-    /* Update cache */
-    cache.addStatus(req,ClusterStatus.TRAINING_FINISHED)
-    
-    /* Notify potential listeners */
-    notify(req,ClusterStatus.TRAINING_FINISHED)
     
   }
   

@@ -30,74 +30,29 @@ import de.kp.spark.cluster.{RequestContext,SKMeans}
 import de.kp.spark.cluster.spec.SequenceSpec
 
 import de.kp.spark.cluster.model._
-
 import de.kp.spark.cluster.sink.RedisSink
 
-class SequenceActor(@transient val ctx:RequestContext) extends BaseActor {
+class SequenceActor(@transient ctx:RequestContext) extends TrainActor(ctx) {
   
   private val base = ctx.config.matrix
-
-  def receive = {
-
-    case req:ServiceRequest => {
-      
-      val params = properties(req)
-
-      /* Send response to originator of request */
-      sender ! response(req, (params == null))
-
-      if (params != null) {
- 
-        try {
-
-          cache.addStatus(req,ClusterStatus.TRAINING_STARTED)
-          
-          val source = new SequenceSource(ctx.sc,ctx.config,new SequenceSpec(req))
-          val dataset = SequenceHandler.sequence2NumSeq(source.connect(req))
-          
-          findClusters(req,dataset,params)
-
-        } catch {
-          case e:Exception => cache.addStatus(req,ClusterStatus.FAILURE)          
-        }
-
-      }
-      
-      context.stop(self)
-          
-    }
+  
+  override def validate(req:ServiceRequest) = {
     
-    case _ => {
-      
-      log.error("unknown request.")
-      context.stop(self)
-      
-    }
+    if (req.data.contains("k") == false)
+      throw new Exception("Parameter 'k' is missing.")
+    
+    if (req.data.contains("top") == false)
+      throw new Exception("Parameter 'top' is missing.")
+
+    if (req.data.contains("iterations") == false)
+      throw new Exception("Parameter 'iterations' is missing.")
     
   }
   
-  private def properties(req:ServiceRequest):(Int,Int,Int) = {
-      
-    try {
-      
-      val k = req.data("k").asInstanceOf[Int]
-      val top = req.data("top").asInstanceOf[Int]
-      
-      val iter = req.data("iterations").asInstanceOf[Int]
-        
-      return (top,k,iter)
-        
-    } catch {
-      case e:Exception => {
-         return null          
-      }
-    }
-    
-  }
-  
-  private def findClusters(req:ServiceRequest,dataset:RDD[NumberedSequence],params:(Int,Int,Int)) {
-
-    cache.addStatus(req,ClusterStatus.DATASET)
+  override def train(req:ServiceRequest) {
+          
+    val source = new SequenceSource(ctx.sc,ctx.config,new SequenceSpec(req))
+    val dataset = SequenceHandler.sequence2NumSeq(source.connect(req))
 
     /*
      * STEP #1: Build similarity matrix
@@ -118,19 +73,15 @@ class SequenceActor(@transient val ctx:RequestContext) extends BaseActor {
     /*
      * STEP #3: Detect top similiar sequences with respect
      * to their cluster centroids
-     */    
-    
-    val (top,k,iterations) = params 
+     */         
+    val k = req.data("k").asInstanceOf[Int]
+    val top = req.data("top").asInstanceOf[Int]
+      
+    val iterations = req.data("iterations").asInstanceOf[Int]
     
     val clustered = SKMeans.detect(dataset,iterations,k,top,dir)
     saveSequences(req,new ClusteredSequences(clustered))
-          
-    /* Update cache */
-    cache.addStatus(req,ClusterStatus.TRAINING_FINISHED)
-    
-    /* Notify potential listeners */
-    notify(req,ClusterStatus.TRAINING_FINISHED)
-    
+   
   }
   
   private def saveSequences(req:ServiceRequest,sequences:ClusteredSequences) {
