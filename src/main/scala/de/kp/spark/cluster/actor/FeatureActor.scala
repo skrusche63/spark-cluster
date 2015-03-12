@@ -26,6 +26,8 @@ import org.apache.spark.mllib.linalg.Vector
 import de.kp.spark.core.Names
 import de.kp.spark.core.model._
 
+import de.kp.spark.core.redis.RedisDB
+
 import de.kp.spark.core.source.VectorSource
 import de.kp.spark.core.source.handler.VectorHandler
 
@@ -40,6 +42,7 @@ import scala.collection.mutable.ArrayBuffer
 class FeatureActor(@transient ctx:RequestContext) extends TrainActor(ctx) {
   
   import ctx.sqlc.createSchemaRDD
+  val redis = new RedisDB(host,port.toInt)
   
   override def validate(req:ServiceRequest) {
       
@@ -188,10 +191,7 @@ class FeatureActor(@transient ctx:RequestContext) extends TrainActor(ctx) {
   }
   
   private def savePoints(req:ServiceRequest,points:ClusteredPoints) {
-
-    val sink = new RedisSink()
-    sink.addPoints(req,points)
-     
+    redis.addPoints(req,points)     
   }
    
 }

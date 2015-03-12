@@ -21,13 +21,15 @@ package de.kp.spark.cluster.actor
 import de.kp.spark.core.Names
 import de.kp.spark.core.model._
 
+import de.kp.spark.core.redis.RedisDB
+
+import de.kp.spark.cluster.Configuration
 import de.kp.spark.cluster.model._
-import de.kp.spark.cluster.sink.RedisSink
 
 class ClusterQuestor extends BaseActor {
 
   implicit val ec = context.dispatcher
-  private val sink = new RedisSink()
+  val redis = new RedisDB(host,port.toInt)
   
   def receive = {
 
@@ -43,12 +45,12 @@ class ClusterQuestor extends BaseActor {
           /*
            * This request retrieves a set of clustered sequences
             */
-          val resp = if (sink.sequencesExist(req) == false) {           
+          val resp = if (redis.sequencesExist(req) == false) {           
             failure(req,Messages.MODEL_DOES_NOT_EXIST(uid))
             
           } else {    
             
-            val sequences = sink.sequences(req)
+            val sequences = redis.sequences(req)
             if (sequences == null) {
               failure(req,Messages.MODEL_DOES_NOT_EXIST(uid))
               
@@ -70,12 +72,12 @@ class ClusterQuestor extends BaseActor {
           /*
            * This request retrieves a set of clustered features
             */
-          val resp = if (sink.pointsExist(req) == false) {           
+          val resp = if (redis.pointsExist(req) == false) {           
             failure(req,Messages.MODEL_DOES_NOT_EXIST(uid))
             
           } else {    
             
-            val points = sink.points(req)
+            val points = redis.points(req)
             if (points == null) {
               failure(req,Messages.MODEL_DOES_NOT_EXIST(uid))
               

@@ -23,6 +23,8 @@ import org.apache.spark.rdd.RDD
 
 import de.kp.spark.core.model._
 
+import de.kp.spark.core.redis.RedisDB
+
 import de.kp.spark.core.source.SequenceSource
 import de.kp.spark.core.source.handler.SequenceHandler
 
@@ -30,13 +32,13 @@ import de.kp.spark.cluster.{RequestContext,SKMeans}
 import de.kp.spark.cluster.spec.SequenceSpec
 
 import de.kp.spark.cluster.model._
-import de.kp.spark.cluster.sink.RedisSink
 
 import scala.collection.mutable.ArrayBuffer
 
 class SequenceActor(@transient ctx:RequestContext) extends TrainActor(ctx) {
   
   private val base = ctx.config.matrix
+  val redis = new RedisDB(host,port.toInt)
   
   override def validate(req:ServiceRequest) = {
     
@@ -70,7 +72,7 @@ class SequenceActor(@transient ctx:RequestContext) extends TrainActor(ctx) {
     SKMeans.save(ctx.sc,matrix,dir)
     
     /* Put directory to RedisSink for later requests */
-    new RedisSink().addMatrix(req,dir)
+    redis.addPath(req,dir)
 
     /*
      * STEP #3: Detect top similiar sequences with respect
@@ -95,10 +97,7 @@ class SequenceActor(@transient ctx:RequestContext) extends TrainActor(ctx) {
   }
   
   private def saveSequences(req:ServiceRequest,sequences:ClusteredSequences) {
-    
-    val sink = new RedisSink()
-    sink.addSequences(req, sequences)
-    
+    redis.addSequences(req, sequences)
   }
 
 }

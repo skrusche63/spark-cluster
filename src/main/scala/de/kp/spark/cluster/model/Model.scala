@@ -29,27 +29,7 @@ case class ParquetCentroid(cluster:Int,features:Seq[Double])
 
 case class ParquetClustered(cluster:Int,row:Long,distance:Double)
 
-case class ClusteredPoint(
-  cluster:Int,distance:Double,point:LabeledPoint
-)
-
-case class ClusteredPoints(items:List[ClusteredPoint])
-
-case class ClusteredSequence(
-  cluster:Int,similarity:Double,sequence:NumberedSequence
-)
-
-case class ClusteredSequences(items:List[ClusteredSequence])
-
-object Serializer extends BaseSerializer {
-
-  def serializeClusteredPoints(points:ClusteredPoints):String = write(points)
-  def deserializeClusteredPoints(points:String):ClusteredPoints = read[ClusteredPoints](points)
-
-  def serializeClusteredSequences(sequences:ClusteredSequences):String = write(sequences)
-  def deserializeClusteredSequences(sequences:String):ClusteredSequences = read[ClusteredSequences](sequences)
-  
-}
+object Serializer extends BaseSerializer 
 
 object Algorithms {
   
